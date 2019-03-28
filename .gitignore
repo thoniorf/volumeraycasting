@@ -1,0 +1,7 @@
+.vs/
+GUIproject/
+*.txt
+*.log
+*.p*
+*.m
+*.mexw64
