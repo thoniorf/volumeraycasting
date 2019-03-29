@@ -13,22 +13,24 @@
 #include <cmath>
 #include <iostream>
 #include <fstream>
+#include <exception>
 
 using matlab::mex::ArgumentList;
 using namespace matlab::engine;
 using namespace matlab::data;
 
 std::ostringstream stream;
-
+std::time_t timer;
+int timeout = 300;
 struct Options {
 public:
 	double threshold			= 0;
 	double minIntensity			= 0;
 	double maxIntensity			= 0;
 	double scale				= 1;
-	double viewOffset			= 0;
-	size_t imageWidth			= 0;
-	size_t imageHeight			= 0;
+	double viewOffset			= 1;
+	size_t imageWidth			= 2;	
+	size_t imageHeight			= 2;
 	double fov					= 60;
 	double imageAspectRatio		= 1;
 
@@ -48,13 +50,18 @@ double degToRad(double d) {
 	return d * M_PI / 180;
 }
 
+double fixZeroDoublePrecisionError(double x) {
+	if (std::fabs(x) <= 5.00e-5)
+		return 0.0;
+	return x;
+}
 /* 3D VECTOR CLASS */
 class Vector3 {
 public:
 	double x, y, z;
 	Vector3() { x = y = z = 0; }
-	Vector3(double scalar) : x(scalar), y(scalar), z(scalar){}
-	Vector3(double i, double j, double k) : x(i), y(j), z(k) {}
+	Vector3(double scalar) : x(scalar), y(scalar), z(scalar) {}
+	Vector3(double i, double j, double k) : x(i), y(j), z(k){}
 
 	const double& operator [] (size_t i) const { return (&x)[i]; }
 	double& operator [] (size_t i) { return (&x)[i]; }
@@ -63,6 +70,16 @@ public:
 	Vector3 operator - (Vector3 v) { return Vector3( x - v.x, y - v.y, z - v.z ); }
 	Vector3 operator * (double scalar) {
 		return Vector3(x*scalar, y*scalar, z*scalar);
+	}
+	Vector3 operator = (Vector3 v) {
+		x = fixZeroDoublePrecisionError(v.x);
+		y = fixZeroDoublePrecisionError(v.y);
+		z = fixZeroDoublePrecisionError(v.z);
+		return Vector3(x, y, z);
+	}
+
+	bool operator != (Vector3 v) {
+		return (v.x != x || v.y != y || v.z != z);
 	}
 		
 	double norm() const { return x * x + y * y + z * z; }
@@ -273,33 +290,37 @@ public:
 		
 	}
 	Camera(Vector3 from, Vector3 to ) {
-		Vector3 tmp(0, 1, 0);
 		this->from = from;
 		this->to = to;
+		
+		setupLookAtMatrix();
+	}
+	void yaw(double angle) { // z-axis
+		double theta = degToRad(angle);
+
+		Matrix4x4 r = Matrix4x4(std::cos(theta), -1* std::sin(theta), 0, 0,
+			std::sin(theta), std::cos(theta), 0, 0,
+			0, 0, 1, 0,
+			0, 0, 0, 1);
+		from = r.VecMatrixMulti(from);
+		setupLookAtMatrix();
+	}
+	void pitch(double angle) { //y-axis
+		double theta = degToRad(angle);
+		Matrix4x4 r = Matrix4x4(std::cos(theta), 0, std::sin(theta), 0,
+			0, 1, 0, 0,
+			-1*std::sin(theta), 0, std::cos(theta), 0,
+			0, 0, 0, 1);
+		from = r.VecMatrixMulti(from);
+		setupLookAtMatrix();
+	}
+private:
+	void setupLookAtMatrix() {
+		Vector3 tmp(0, 1, 0);
 		forward = (to - from).normalize();
 		right = tmp.cross(forward);
 		up = forward.cross(right);
 
-		setupLookAtMatrix();
-	}
-	void yaw(double y) {
-		double theta = degToRad(y);
-		Matrix4x4 r = Matrix4x4(std::cos(theta), 0, std::sin(theta), 0,
-			0, 1, 0, 0,
-			-1 * std::sin(theta), 0, std::cos(theta), 0,
-			0, 0, 0, 1);
-		lookAt =  lookAt.matrixMulti(r);
-	}
-	void pitch(double p) {
-		double theta = degToRad(p);
-		Matrix4x4 r = Matrix4x4(1, 0, 0, 0,
-			0, std::cos(theta), -1 * std::sin(theta), 0,
-			0, std::sin(theta), std::cos(theta), 0,
-			0, 0, 0, 1);
-		lookAt = lookAt.matrixMulti(r);
-	}
-private:
-	void setupLookAtMatrix() {
 		lookAt = Matrix4x4(
 			right.x, right.y, right.z, 0,
 			up.x, up.y, up.z, 0,
@@ -363,16 +384,24 @@ Hit computeRayABBoxIntersection(Ray ray, Grid grid) {
 	return hit;
 }
 
-double interpolation(double x, double min, double max) {
-	return  (x - min) * ((255) / (max - min));
+double interpolation(double x,Options option) {
+	if (x < option.threshold) return option.minIntensity;
+	return  (x - option.minIntensity) * ((255) / (option.maxIntensity - option.minIntensity));
 }
-
-Vector3 rasterToScreen(size_t w, size_t h,Options options) {
+Vector3 rasterToScreen(size_t w, size_t h, Options options) {
 	// from raster to normalized to normalized to screen to camera
 	double cameraX = (2 * (w + 0.5) / options.imageWidth - 1) * options.scale * options.imageAspectRatio;
 	double cameraY = (1 - 2 * (h + 0.5) / options.imageHeight) * options.scale;
 
 	return Vector3(cameraX, cameraY, -1);
+}
+
+Vector3 rasterToScreen(size_t w, size_t h,double z,Options options) {
+	// from raster to normalized to normalized to screen to camera
+	double cameraX = (2 * (w + 0.5) / options.imageWidth - 1) * options.imageAspectRatio;//*options.scale;
+	double cameraY = (1 - 2 * (h + 0.5) / options.imageHeight);//*options.scale;
+
+	return Vector3(cameraX, cameraY, z);
 }
 
 class MexFunction : public matlab::mex::Function {
@@ -384,7 +413,7 @@ class MexFunction : public matlab::mex::Function {
 public:
 	void operator()(ArgumentList outputs, ArgumentList inputs) {
 		checkArguments(inputs);
-
+		std::time(&timer);
 		const TypedArray<double> vol_size	= inputs[0];
 		const TypedArray<double> volume		= inputs[1];
 		const TypedArray<double> viewSize	= inputs[2];
@@ -393,7 +422,7 @@ public:
 		options.setIntensity(inputs[3][0], inputs[4][0]);
 		options.threshold = inputs[5][0];
 		options.fov = 52.51;
-		options.viewOffset = 100;
+		options.viewOffset = 200;
 		options.scale = std::tan(degToRad((options.fov * 0.5)));
 		options.imageAspectRatio = options.imageWidth / options.imageHeight;
 
@@ -410,34 +439,44 @@ public:
 		
 		Grid grid(Vector3(0), Vector3(vol_size[0], vol_size[1], vol_size[2]));
 	
-		Camera camera(Vector3(0, vol_size[1] + options.viewOffset, 0), //Vector3(vol_size[0]/2, vol_size[1]/2, vol_size[2]/2));
-			Vector3(0, -1, 0));
+		Camera camera(Vector3(vol_size[0] / 2 + options.viewOffset, vol_size[1] / 2, vol_size[2] / 2 ), Vector3(vol_size[0]/2, vol_size[1]/2, vol_size[2]/2));
 
-		camera.yaw(rotation[0]);
 		camera.pitch(rotation[1]);
+		camera.yaw(rotation[0]);
 
-		Vector3 rayStart = camera.lookAt.VecMatrixMulti(Vector3(0));
+		//print lookat matrix
 
 		int maxIteration = std::floor(std::fmax(vol_size[0], std::fmax(vol_size[1], vol_size[2])));
 		int counterNoIntersection = 0;
 		int counterIntersection = 0;
 
-		/*stream << "grid" << grid << std::endl;
-		stream << camera.lookAt << std::endl;		
+		stream << "grid" << grid << std::endl;
+		/*stream << camera.lookAt << std::endl;		
 		stream << rayStart << std::endl;*/
 
 		std::ofstream oflog("./info.log"); // DEBUG INFO 
 		std::ofstream ofs("./out.ppm", std::ios::out | std::ios::binary); //DEBUG IMAGE
+		
+		double littleStep = 0.2;
+
+		double halfWidth = std::fabs(options.imageWidth / 2);
+		double halfHeight = std::fabs(options.imageHeight / 2);
 
 		for (size_t h = 0; h < options.imageHeight; ++h) {
 			for (size_t w = 0; w < options.imageWidth; ++w) {
-								
-				Vector3 rayEnd =  rasterToScreen(w,h,options);
 
-				rayEnd = camera.lookAt.VecMatrixMulti(rayEnd);
-				//oflog << w << " " << h << " " << rayEnd << std::endl;
-				//Ray ray(rayStart, rayEnd);
-				Ray ray(Vector3(rayStart.x+w , rayStart.y, rayStart.z+h), Vector3( w,  -1, h));
+				//Vector3 rayStart = camera.lookAt.VecMatrixMulti(rasterToScreen(w,h, 0,options));
+				//Vector3 rayEnd = camera.lookAt.VecMatrixMulti(rasterToScreen(w, h, 1, options));
+				double x = w - halfWidth;
+				double y = h - halfHeight;
+
+				Vector3 rayStart = camera.lookAt.VecMatrixMulti(Vector3(x,y,0));
+				Vector3 rayEnd = camera.lookAt.VecMatrixMulti(Vector3(x,y, 1));
+				
+				/*stream <<"rayStart: "<< rayStart << std::endl;
+				stream <<"rayend: "<< rayEnd << std::endl;*/
+
+				Ray ray(rayStart, rayEnd);
 
 				Hit hit = computeRayABBoxIntersection(ray, grid);
 
@@ -451,88 +490,46 @@ public:
 
 					Vector3 start = ray.orig + ray.dir *hit.tmin;
 					Vector3 end = ray.orig + ray.dir *hit.tmax;
-					
-					int ix = std::floor(start.x) != 0 ? std::floor(start.x ) - 1 : 0;
-					int iy = std::floor(start.y) != 0 ? std::floor(start.y ) - 1 : 0;
-					int iz = std::floor(start.z) != 0 ? std::floor(start.z ) - 1 : 0;
-					
 
-					int xDir = (ray.dir.x > 0) ? 1 : (ray.dir.x < 0) ? -1 : 0;
-					int yDir = (ray.dir.y > 0) ? 1 : (ray.dir.y < 0) ? -1 : 0;
-					int zDir = (ray.dir.z > 0) ? 1 : (ray.dir.z < 0) ? -1 : 0;
-
-					Vector3 dir(xDir, yDir, zDir);
-
-					int xBound = ((dir.x > 0) ? ix + 1 : ix);
-					int yBound = ((dir.y > 0) ? iy + 1 : iy);
-					int zBound = ((dir.z > 0) ? iz + 1 : iz);
-
-					Vector3 invDir(1 / dir.x, 1 / dir.y, 1 / dir.z);
-
-					double xt = (xBound - start.x) * invDir.x ;
-					double yt =  (yBound - start.y) * invDir.y ;
-					double zt = (zBound - start.z) * invDir.z ;
-
-					double xDelta =  dir.x * invDir.x ;
-					double yDelta =  dir.y * invDir.y ;
-					double zDelta =  dir.z * invDir.z ;
-
-
-					double xOut = (dir.x < 0) ? -1 : grid.bounds[1].x;
-					double yOut = (dir.y < 0) ? -1 : grid.bounds[1].y;
-					double zOut = (dir.z < 0) ? -1 : grid.bounds[1].z;
-
-					double value = options.minIntensity;
-
-					for (int i = 0; i < maxIteration; i++) {
-						if (xt < yt && xt < zt) {
-
-							double xx = ((dir.x > 0) ? ix + 1 : ix);
-							double newT = (xx - start.x) *invDir.x;
-
-							ix += dir.x;
-							if (ix == xOut) break;
-							xt += xDelta;
-
-						}
-						else if (yt < zt) {
-
-							double yy = ((dir.y > 0) ? iy + 1 : iy);
-							double newT = (yy - start.y) *invDir.y;
-
-							iy += dir.y;
-							if (iy == yOut) break;
-							yt += yDelta;
-
-						} else {
-
-							double zz = ((dir.z > 0) ? iz + 1 : iz);
-							double newT = (zz - start.z) *invDir.z;
-
-							iz += dir.z;
-							if (iz == zOut) break;
-							zt += zDelta;
-
-						}
-						
-						if (ix < 0 || iy < 0 || iz < 0 || ix > grid.bounds[1].x || iy > grid.bounds[1].y || iz > grid.bounds[1].z) {
-							/*Vector3 voxelIndex = Vector3(ix, iy, iz); stream << voxelIndex << std::endl; displayOnMATLAB(stream);*/
+					displayOnMATLAB(stream);
+					while (start != end ) {
+						if  (time(NULL) - timer >= timeout)
+						{
+							stream << "TIMEOUT" << std::endl;
 							break;
 						}
-						
-						//value = volume[ix][iy][iz];
-						double tmp = volume[ix][iy][iz];
-						if (tmp > value) {
-							if (tmp >= options.threshold)
-								value = tmp;
-							else
-								value = options.minIntensity;
+						//aggiustare il floor per gli indici, se start è fuori ritorna un valore diverso da zero, ma maggiore di max-1, e quindi volume[start] è out of bound; maybe max(start,grid.max)
+						int ix = std::floor(start.x) != 0 ? std::floor(start.x) - 1 : std::floor(start.x);
+						int iy = std::floor(start.y) != 0 ? std::floor(start.y) - 1 : std::floor(start.y);
+						int iz = std::floor(start.z) != 0 ? std::floor(start.z) - 1 : std::floor(start.z);
+
+						if (ix < 0 || iy < 0 || iz < 0 || ix > grid.bounds[1].x-1 || iy > grid.bounds[1].y-1 || iz > grid.bounds[1].z-1) {
+							//stream << start << std::endl;
+							//stream << std::floor(start.x) << " " << std::floor(start.y) << " " << std::floor(start.z) << std::endl;
+							//stream << ix << " " << iy << " " << iz << std::endl;
+							//displayOnMATLAB(stream);
+							break;
 						}
-							
-						// movimento costante
-						// salta re voxel non 
+						//add try-catch no 
+						try {
+							double value = volume[ix][iy][iz];
+							if (value >= options.threshold) {
+								viewOutput[w][h] = interpolation(value, options);
+								break;
+							}
+						}
+						catch (std::exception& e) {
+							stream<<e.what()<<std::endl;
+							stream << start << std::endl;
+							stream << std::floor(start.x) << " " << std::floor(start.y) << " " << std::floor(start.z) << std::endl;
+							stream << ix << " " << iy << " " << iz << std::endl;
+							displayOnMATLAB(stream);
+							return;
+						}
+						
+						start = start + ray.dir*littleStep;
+						
 					}
-					viewOutput[w][h] = interpolation(value, options.minIntensity,options.maxIntensity);
 				}
 			}
 		}
