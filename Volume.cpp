@@ -364,10 +364,10 @@ public:
 		backward = rotationM.DirMatrixMulti(backward);
 		from = to + backward;
 
-		Vector3 tmp(0, 1, 0);
+		Vector3 tmp = rotationM.DirMatrixMulti(Vector3(0,1,0));
 		forward = (to - from).normalize();
 		stream << "forward " << forward << std::endl;
-		if (forward.y == 1) {
+		/*if (forward.y == 1) {
 			tmp = Vector3(1, 0, 0);
 		}
 		else if (forward.y == -1) {
@@ -377,7 +377,8 @@ public:
 			tmp = Vector3(1, 0, 0);
 		else if (forward.y <= 0 && forward.x > 0) {
 			tmp = Vector3(0, -1, 0);
-		}
+		}*/
+
 		right = tmp.cross(forward);
 		up = forward.cross(right);
 
