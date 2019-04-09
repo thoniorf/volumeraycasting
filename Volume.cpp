@@ -312,41 +312,19 @@ public:
 		/*setupLookAtMatrix();*/
 	}
 	void yaw(double angle) { // z-axis
-		//backward = from - to;
-
 		theta = degToRad(std::fmod(angle,360));
-
-		//stream << "backward: " << backward << std::endl;
-		
-
 		Matrix4x4 rZ = Matrix4x4(std::cos(theta), -1 * std::sin(theta), 0, 0,
 			std::sin(theta), std::cos(theta), 0, 0,
 			0, 0, 1, 0,
 			0, 0, 0, 1);
-		stream << "yaw angle: " << angle << " in rad: " << theta << std::endl;
-		//backward = rZ.DirMatrixMulti(backward);
-		//from = to + backward;
-
-		////stream << "from: " << from<<std::endl;
-		//setupLookAtMatrix();
 		rotationM = rotationM.matrixMulti(rZ);
 	}
 	void pitch(double angle) { //y-axis
-		/*backward = from - to;
-*/
 		phi = degToRad(std::fmod(angle, 360));
 		Matrix4x4 rY = Matrix4x4(std::cos(phi), 0, -1*std::sin(phi), 0,
 			0, 1, 0, 0,
 			std::sin(phi), 0, std::cos(phi), 0,
 			0, 0, 0, 1);
-
-		stream << "pitch angle: " << angle << " in rad: " << phi << std::endl;
-		//backward = rY.DirMatrixMulti(backward);
-
-		//from = to + backward;
-
-		//stream << "from: " << from << std::endl;
-		//setupLookAtMatrix();
 		rotationM = rotationM.matrixMulti(rY);
 	}
 
@@ -363,25 +341,10 @@ public:
 		backward = from - to;
 		backward = rotationM.DirMatrixMulti(backward);
 		from = to + backward;
-
 		Vector3 tmp = rotationM.DirMatrixMulti(Vector3(0,1,0));
 		forward = (to - from).normalize();
-		stream << "forward " << forward << std::endl;
-		/*if (forward.y == 1) {
-			tmp = Vector3(1, 0, 0);
-		}
-		else if (forward.y == -1) {
-			tmp = Vector3(-1, 0, 0);
-		}
-		else if (forward.y > 0 && forward.x > 0)
-			tmp = Vector3(1, 0, 0);
-		else if (forward.y <= 0 && forward.x > 0) {
-			tmp = Vector3(0, -1, 0);
-		}*/
-
 		right = tmp.cross(forward);
 		up = forward.cross(right);
-
 		lookAt = Matrix4x4(
 			right.x, right.y, right.z, 0,
 			up.x, up.y, up.z, 0,
@@ -467,7 +430,6 @@ Vector3 rasterToScreen(size_t w, size_t h,double z,Options options) {
 }
 Vector3 getGradient(int ix, int iy, int iz,const TypedArray<double>& volume) {
 	// component-wise linear interpolation
-	// simple average for gray vector
 	double a, b, c;
 	int xi = (int)(ix + 0.5);
 	double xT = ix + 0.5 - xi;
@@ -481,8 +443,6 @@ Vector3 getGradient(int ix, int iy, int iz,const TypedArray<double>& volume) {
 	double zT = iz + 0.5 - zi;
 	c = (volume[ix][iy][zi] - volume[ix][iy][zi-1]) * (1.0 - zT) + (volume[ix][iy][zi+1] - volume[ix][iy][zi]) * zT;
 
-	//double gray = (a + b + c) / 3;
-	//return Vector3(gray,gray,gray);
 	return Vector3(a, b, c);
 }
 
@@ -552,14 +512,7 @@ public:
 		const TypedArray<double> rotation = inputs[6];
 	
 		TypedArray<double> viewOutput = factory.createArray<double>({ options.imageWidth,options.imageHeight,3 });
-
-		stream << "VOL: "	<< volume.getNumberOfElements() << std::endl;
-		stream << "INT: "	<< options.minIntensity << " " << options.maxIntensity << std::endl;
-		stream << "SIZE: "	<< vol_size[0] << " "<< vol_size[1]<<" "<< vol_size[2] << std::endl;
-		stream << "VIEW: "	<< options.imageWidth << " " << options.imageHeight << std::endl;
-		stream << "ROT: y-" << rotation[0] << " p-" << rotation[1] << " r-" << rotation[2] << std::endl;
-		displayOnMATLAB(stream);
-		
+	
 		Vector3 lightPosition(vol_size[0] / 2 + options.viewOffset, vol_size[1] / 2, vol_size[2] / 2);
 
 		Vector3 ambientColor(0.5, 0.5, 0.5);
@@ -574,22 +527,26 @@ public:
 		camera.pitch(rotation[1]);
 		camera.roll(rotation[2]);
 		camera.yaw(rotation[0]);
-
-
-
 		camera.setupLookAtMatrix();
+
 		int maxIteration = std::floor(std::fmax(vol_size[0], std::fmax(vol_size[1], vol_size[2])));
 		int counterNoIntersection = 0;
 		int counterIntersection = 0;
-
-		stream << camera.lookAt << std::endl;		
 		
 		double littleStep = 1;
 		double maxStep = std::sqrt(vol_size[0] * vol_size[0] + vol_size[1] * vol_size[1] + vol_size[2] * vol_size[2]);
 
 		double halfWidth = std::fabs(options.imageWidth / 2);
 		double halfHeight = std::fabs(options.imageHeight / 2);
-
+#if DEBUG
+		stream << "VOL: " << volume.getNumberOfElements() << std::endl;
+		stream << "INT: " << options.minIntensity << " " << options.maxIntensity << std::endl;
+		stream << "SIZE: " << vol_size[0] << " " << vol_size[1] << " " << vol_size[2] << std::endl;
+		stream << "VIEW: " << options.imageWidth << " " << options.imageHeight << std::endl;
+		stream << "ROT: y-" << rotation[0] << " p-" << rotation[1] << " r-" << rotation[2] << std::endl;
+		stream << camera.lookAt << std::endl;
+		displayOnMATLAB(stream);
+#endif
 		for (size_t h = 0; h < options.imageHeight; ++h) {
 			for (size_t w = 0; w < options.imageWidth; ++w) {
 
@@ -616,7 +573,7 @@ public:
 					Vector3 start = ray.orig + ray.dir *hit.tmin;
 					Vector3 end = ray.orig + ray.dir *hit.tmax;
 
-					for (size_t t = 0; t < maxStep; t++) {
+					for (size_t t = 0; t < maxStep; t+=littleStep) {
 
 						if  (time(NULL) - timer >= timeout)
 						{
@@ -631,22 +588,6 @@ public:
 							if (volume[ix][iy][iz] >= options.threshold) {
 								try {
 									
-									/*int up = iy + 1;
-									int down = iy - 1;
-									int front = iz + 1;
-									int back = iz - 1;
-									int left = ix + 1;
-									int right = ix - 1;
-
-									double up_voxel = volume[ix][up][iz];
-									double down_voxel = volume[ix][down][iz];
-									double front_voxel = volume[ix][iy][front];
-									double back_voxel = volume[ix][iy][back];
-									double left_voxel = volume[left][iy][iz];
-									double right_voxel = volume[right][iy][iz];
-									double sum = up_voxel + down_voxel + front_voxel + back_voxel + left_voxel + right_voxel;
-									double interpolated = sum / 6;
-									*/
 									Vector3 grad = getGradient(ix, iy, iz, volume);
 									Vector3 normal = -grad / std::sqrt(grad.norm());
 									Vector3 lightDir = lightPosition.normalize();
@@ -660,7 +601,7 @@ public:
 									//1* lightAmbientColor - Ambient component
 									//1* lightDiffuseColor*dot(lightdir,normals)
 									//1* lightSpecularColor * [dot(halfdir,normals)]^shininess
-									Vector3 IlluminationI = ambientColor + diffuseColor * lambertian  +specularColor * specular;
+									Vector3 IlluminationI = ambientColor + diffuseColor * lambertian  + specularColor * specular;
 
 									viewOutput[w][h][0] = IlluminationI.x;
 									viewOutput[w][h][1] = IlluminationI.y;
@@ -685,10 +626,13 @@ public:
 			}
 		}
 
+
+
+
+#if DEBUG
 		stream << "no intersection " << counterNoIntersection << std::endl;
 		stream << "intersection " << counterIntersection << std::endl;
 		displayOnMATLAB(stream);
-
 		/* DEBUG
 		*  Save the output image in a file without going through matlab
 		*/
@@ -705,7 +649,7 @@ public:
 
 		ofs.close();
 		/* END DEBUG*/
-
+#endif
 		outputs[0] = viewOutput;
 	}
    
