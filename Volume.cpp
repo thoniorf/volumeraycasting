@@ -197,6 +197,17 @@ public:
 
 		return Vector3(a, b, c);
 	}
+	inline
+	Vector3 ColMajMatrixMulti(const Vector3& src) const 
+	{
+		double a, b, c;
+		
+		a = src.x * x[0][0] + src.y * x[0][1] + src.z * x[0][2];
+		b = src.x * x[1][0] + src.y * x[1][1] + src.z * x[1][2];
+		c = src.x * x[2][0] + src.y * x[2][1] + src.z * x[2][2];
+
+		return Vector3(a, b, c);
+	}
 
 	friend std::ostream& operator << (std::ostream &s, const Matrix4x4 &m)
 	{
@@ -226,7 +237,7 @@ public:
 };
 
 class Color {
-private:
+protected:
 	Vector3 arancione;
 	Vector3 rosso;
 	Vector3 giallo;
@@ -256,6 +267,32 @@ public:
 		case 6: return azzurro;
 		default:
 			return Vector3(0.5, 0.5, 0.5);
+		}
+	}
+};
+class YuvColor : public Color {
+public:
+	YuvColor() {
+		arancione = Vector3(0.5, -0.318368, 0.251903);
+		rosso = Vector3(0.5, -0.09991, 0.615);
+		giallo = Vector3(0.5, -0.436, 0.05639);
+		fucsia = Vector3(0.5, 0.304568, 0.27971);
+		verdino = Vector3(0.5, -0.380686, -0.257824);
+		rosa = Vector3(0.5, -0.0031775, 0.15093);
+		azzurro = Vector3(0.5, 0.0387847, -0.10737);
+	}
+	Vector3 getColorByIndex(size_t index) {
+		switch (index)
+		{
+		case 0: return arancione;
+		case 1: return rosso;
+		case 2: return giallo;
+		case 3: return fucsia;
+		case 4: return verdino;
+		case 5: return rosa;
+		case 6: return azzurro;
+		default:
+			return Vector3(0.5, 0, 0);
 		}
 	}
 };
@@ -314,19 +351,6 @@ public:
 
 		return s;
 	}
-};
-
-struct Hit {
-	bool isHit = false;
-	double tmin;
-	double tmax;
-};
-
-class ScreenSpace {
-public:
-	size_t width;
-	size_t height;
-	ScreenSpace(const int w, const int h) { width = w; height = h; }
 };
 
 class Camera {
@@ -478,13 +502,16 @@ Vector3 getGradient(const int& ix, const int& iy, const int& iz,const TypedArray
 
 	return Vector3(a, b, c);
 }
-int getObjIndexIntersection(const int& ix, const int& iy, const int& iz,const std::vector<TypedArray<double>>& objs) {
+int getObjIndexIntersection(const int& ix, const int& iy, const int& iz, const size_t i,const std::vector<TypedArray<double>>& objs) {
 	if (objs.size() == 0) return -1;
-	for (size_t i = 0; i < objs.size(); i++) {
-		if (objs[i][ix][iy][iz] == 1) return i;
-	}
+#if COMBINEDSINGLEFILE
+	if (objs[i][ix][iy][iz] > 0) return (int)objs[i][ix][iy][iz];
+#else
+	if (objs[i][ix][iy][iz] == 1) return i;
+#endif COMBINEDSINGLEFILE
 	return -2;
 }
+
 
 class MexFunction : public matlab::mex::Function {
     ArrayFactory factory;
@@ -556,6 +583,9 @@ public:
 		options.scale = std::tan(degToRad((options.fov * 0.5)));
 		options.imageAspectRatio = options.imageWidth / options.imageHeight;
 
+		Matrix4x4 rgbToYuv(0.2126, 0.7152, 0.0722, 0, -0.09991, -0.33609, 0.436, 0, 0.615, -0.55861, -0.05639, 0, 0, 0, 0, 0);
+		Matrix4x4 yuvToRgb(1, 0, 1.28033, 0,1, -0.21482, -0.38059, 0, 1, 2.12798, 0, 0, 0, 0, 0, 0);
+
 		const TypedArray<double> rotation = inputs[6];
 
 		TypedArray<double> viewOutput = factory.createArray<double>({ options.imageWidth,options.imageHeight,3 });
@@ -565,6 +595,7 @@ public:
 		Vector3 ambientColor(0.4, 0.4, 0.4);
 		Vector3 diffuseColor(0.5, 0.5, 0.5);
 		Vector3 specularColor(0.7, 0.7, 0.7);
+
 		double shininess = 16.0;
 		double alpha = 0.5;
 
@@ -596,9 +627,12 @@ public:
 			stream << obj[0][0][0] << std::endl;
 		}*/
 		displayOnMATLAB(stream);
-#endif //DEBUG
+#endif DEBUG
 		double tmin = 0,tmax = 0;
-		Color colors;
+		YuvColor colors;
+		double outputAlpha0 = 0;
+		double outputAlpha1 = 0;
+		double blendingFactor = 0.5;
 		for (size_t h = 0; h < options.imageHeight; ++h) {
 			for (size_t w = 0; w < options.imageWidth; ++w) {
 
@@ -625,50 +659,54 @@ public:
 							stream << "TIMEOUT" << std::endl;
 							break;
 						}
-#endif // DEBUG
+#endif DEBUG
 						int ix = std::floor(start.x) > 0 ? std::floor(start.x) - 1 : 0;
 						int iy = std::floor(start.y) > 0 ? std::floor(start.y) - 1 : 0;
 						int iz = std::floor(start.z) > 0 ? std::floor(start.z) - 1 : 0;
 
 						if (grid.isInsideGrid(ix, iy, iz)) {
-							int index = getObjIndexIntersection(ix, iy, iz, objs);
-							if (index > -2) { 
-								if (volume[ix][iy][iz] >= options.threshold) {
-									try {
+							if (volume[ix][iy][iz] >= options.threshold) {
+								for (size_t i = 0; i < objs.size() || objs.empty(); i++) {
+									int index = getObjIndexIntersection(ix, iy, iz,i, objs);
+									if (index > -2) {
+										try {
 
-										Vector3 grad = getGradient(ix, iy, iz, volume);
-										Vector3 normal = -grad / std::sqrt(grad.norm());
+											Vector3 grad = getGradient(ix, iy, iz, volume);
+											Vector3 normal = -grad / std::sqrt(grad.norm());
 
-										Vector3 lightDir = camera.from.normalize();
-										double distance = lightPosition.length();
-										double lambertian = lightDir.dot(normal);
+											Vector3 lightDir = camera.from.normalize();
+											double distance = lightPosition.length();
+											double lambertian = lightDir.dot(normal);
 
-										Vector3 viewDir = rayStart.normalize();
-										Vector3 halfDir = (lightDir + viewDir).normalize();
+											Vector3 viewDir = rayStart.normalize();
+											Vector3 halfDir = (lightDir + viewDir).normalize();
 
-										double specAngle = halfDir.dot(normal);
-										double specular = std::pow(specAngle, shininess);
-										//1* lightAmbientColor - Ambient component
-										//1* lightDiffuseColor*dot(lightdir,normals) * weight
-										//1* lightSpecularColor * [dot(halfdir,normals)]^shininess * (1-weight)
-										diffuseColor = colors.getColorByIndex(index);
-										Vector3 IlluminationI = ambientColor + diffuseColor * lambertian * alpha + specularColor * specular * (1 - alpha);
+											double specAngle = halfDir.dot(normal);
+											double specular = std::pow(specAngle, shininess);
+											//1* lightAmbientColor  +  1* lightDiffuseColor*dot(lightdir,normals) * weight  +  1* lightSpecularColor * [dot(halfdir,normals)]^shininess * (1-weight)
+											diffuseColor = yuvToRgb.ColMajMatrixMulti(colors.getColorByIndex(index));
+											Vector3 IlluminationI = ambientColor + diffuseColor * lambertian * alpha + specularColor * specular * (1 - alpha);
+											outputAlpha0 = outputAlpha1;
+											outputAlpha1 = blendingFactor + outputAlpha1 * (1 - blendingFactor);
+											viewOutput[w][h][0] += (IlluminationI.x * blendingFactor + viewOutput[w][h][0] * outputAlpha0 * (1 - blendingFactor)) / outputAlpha1;
+											viewOutput[w][h][1] += (IlluminationI.y * blendingFactor + viewOutput[w][h][1] * outputAlpha0 * (1 - blendingFactor)) / outputAlpha1;
+											viewOutput[w][h][2] += (IlluminationI.z * blendingFactor + viewOutput[w][h][2] * outputAlpha0 * (1 - blendingFactor)) / outputAlpha1;
+											//break;
 
-										viewOutput[w][h][0] = IlluminationI.x;
-										viewOutput[w][h][1] = IlluminationI.y;
-										viewOutput[w][h][2] = IlluminationI.z;
-										break;
 
+										}
+										catch (std::exception& e) {
+											stream << e.what() << std::endl;
+											stream << start << std::endl;
+											stream << std::floor(start.x) << " " << std::floor(start.y) << " " << std::floor(start.z) << std::endl;
+											stream << ix << " " << iy << " " << iz << std::endl;
+											displayOnMATLAB(stream);
+											return;
+										}
 									}
-									catch (std::exception& e) {
-										stream << e.what() << std::endl;
-										stream << start << std::endl;
-										stream << std::floor(start.x) << " " << std::floor(start.y) << " " << std::floor(start.z) << std::endl;
-										stream << ix << " " << iy << " " << iz << std::endl;
-										displayOnMATLAB(stream);
-										return;
-									}
+									if (objs.empty()) break;
 								}
+								break;
 							}
 						}
 						start = start + ray.dir*littleStep;
