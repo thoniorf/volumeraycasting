@@ -245,6 +245,7 @@ protected:
 	Vector3 verdino;
 	Vector3 rosa;
 	Vector3 azzurro;
+	Vector3 default;
 public:
 	Color() {
 		arancione = Vector3(1, 0.65, 0);
@@ -254,6 +255,7 @@ public:
 		verdino = Vector3(0.48, 0.99, 0);
 		rosa = Vector3(1, 0.75, 0.80);
 		azzurro = Vector3(0.68, 0.85, 0.90);
+		default = Vector3(0.5, 0.5, 0.5);
 	}
 	Vector3 getColorByIndex(size_t index) {
 		switch (index)
@@ -266,34 +268,21 @@ public:
 		case 5: return rosa;
 		case 6: return azzurro;
 		default:
-			return Vector3(0.5, 0.5, 0.5);
+			return default;
 		}
 	}
 };
 class YuvColor : public Color {
 public:
 	YuvColor() {
-		arancione = Vector3(0.5, -0.318368, 0.251903);
-		rosso = Vector3(0.5, -0.09991, 0.615);
-		giallo = Vector3(0.5, -0.436, 0.05639);
-		fucsia = Vector3(0.5, 0.304568, 0.27971);
-		verdino = Vector3(0.5, -0.380686, -0.257824);
-		rosa = Vector3(0.5, -0.0031775, 0.15093);
-		azzurro = Vector3(0.5, 0.0387847, -0.10737);
-	}
-	Vector3 getColorByIndex(size_t index) {
-		switch (index)
-		{
-		case 0: return arancione;
-		case 1: return rosso;
-		case 2: return giallo;
-		case 3: return fucsia;
-		case 4: return verdino;
-		case 5: return rosa;
-		case 6: return azzurro;
-		default:
-			return Vector3(0.5, 0, 0);
-		}
+		arancione = Vector3(1, -0.318368, 0.251903);
+		rosso = Vector3(1, -0.09991, 0.615);
+		giallo = Vector3(1, -0.436, 0.05639);
+		fucsia = Vector3(1, 0.304568, 0.27971);
+		verdino = Vector3(1, -0.380686, -0.257824);
+		rosa = Vector3(1, -0.0031775, 0.15093);
+		azzurro = Vector3(1, 0.0387847, -0.10737);
+		default = Vector3(1, 0, 0);
 	}
 };
 
@@ -468,6 +457,9 @@ double interpolation(double x,Options option) {
 	if (x < option.threshold) return option.minIntensity;
 	return  (x - option.minIntensity) * ((255) / (option.maxIntensity - option.minIntensity));
 }
+double interpolation01(double x,Options option) {
+	return  (x - option.minIntensity) * ((1) / (option.maxIntensity - option.minIntensity));
+}
 
 Vector3 rasterToScreen(size_t w, size_t h, Options options) {
 	// from raster to normalized to normalized to screen to camera
@@ -592,9 +584,9 @@ public:
 
 		Vector3 lightPosition(vol_size[0] / 2 + options.viewOffset, vol_size[1] / 2, vol_size[2] / 2);
 
-		Vector3 ambientColor(0.4, 0.4, 0.4);
-		Vector3 diffuseColor(0.5, 0.5, 0.5);
-		Vector3 specularColor(0.7, 0.7, 0.7);
+		Vector3 ambientColor(0.2, 0.2, 0.2);
+		Vector3 diffuseColor(0.3, 0.3, 0.3);
+		Vector3 specularColor(0.5, 0.5, 0.5);
 
 		double shininess = 16.0;
 		double alpha = 0.5;
@@ -628,13 +620,28 @@ public:
 		}*/
 		displayOnMATLAB(stream);
 #endif DEBUG
+
 		double tmin = 0,tmax = 0;
-		YuvColor colors;
-		double outputAlpha0 = 0;
-		double outputAlpha1 = 0;
-		double blendingFactor = 0.5;
+		Color colors;
+		//YuvColor colors;
+
+		bool noObj = objs.empty();
+
+		std::vector<double> alphaValues;
+		alphaValues.push_back(0); // vuoto
+		alphaValues.push_back(0); // strisce
+		alphaValues.push_back(0); // faccia destra
+		alphaValues.push_back(0); // bho
+		alphaValues.push_back(0.1); // faccia sinistra
+		alphaValues.push_back(0.25); // jaw
+		alphaValues.push_back(0.5); // skull
+
 		for (size_t h = 0; h < options.imageHeight; ++h) {
 			for (size_t w = 0; w < options.imageWidth; ++w) {
+
+				viewOutput[w][h][0] = 0;
+				viewOutput[w][h][1] = 0;
+				viewOutput[w][h][2] = 0;
 
 				double x = w - halfWidth;
 				double y = h - halfHeight;
@@ -652,6 +659,8 @@ public:
 					Vector3 start = ray.orig + ray.dir *tmin;
 					Vector3 end = ray.orig + ray.dir *tmax;
 
+					double pixelOpacity = 0;
+
 					for (size_t t = 0; t < maxStep; t += littleStep) {
 #if DEBUG
 						if (time(NULL) - timer >= timeout)
@@ -663,11 +672,12 @@ public:
 						int ix = std::floor(start.x) > 0 ? std::floor(start.x) - 1 : 0;
 						int iy = std::floor(start.y) > 0 ? std::floor(start.y) - 1 : 0;
 						int iz = std::floor(start.z) > 0 ? std::floor(start.z) - 1 : 0;
-
+						
 						if (grid.isInsideGrid(ix, iy, iz)) {
 							if (volume[ix][iy][iz] >= options.threshold) {
-								for (size_t i = 0; i < objs.size() || objs.empty(); i++) {
-									int index = getObjIndexIntersection(ix, iy, iz,i, objs);
+
+								//for (size_t i = 0; i < objs.size() || objs.empty() ; i++) {
+									int index = getObjIndexIntersection(ix, iy, iz,0, objs);
 									if (index > -2) {
 										try {
 
@@ -683,17 +693,33 @@ public:
 
 											double specAngle = halfDir.dot(normal);
 											double specular = std::pow(specAngle, shininess);
-											//1* lightAmbientColor  +  1* lightDiffuseColor*dot(lightdir,normals) * weight  +  1* lightSpecularColor * [dot(halfdir,normals)]^shininess * (1-weight)
-											diffuseColor = yuvToRgb.ColMajMatrixMulti(colors.getColorByIndex(index));
+
+											diffuseColor = colors.getColorByIndex(index);
+					
+											// 1* lightAmbientColor  +  1* lightDiffuseColor*dot(lightdir,normals) * weight  +  1* lightSpecularColor * [dot(halfdir,normals)]^shininess * (1-weight)
 											Vector3 IlluminationI = ambientColor + diffuseColor * lambertian * alpha + specularColor * specular * (1 - alpha);
-											outputAlpha0 = outputAlpha1;
-											outputAlpha1 = blendingFactor + outputAlpha1 * (1 - blendingFactor);
-											viewOutput[w][h][0] += (IlluminationI.x * blendingFactor + viewOutput[w][h][0] * outputAlpha0 * (1 - blendingFactor)) / outputAlpha1;
-											viewOutput[w][h][1] += (IlluminationI.y * blendingFactor + viewOutput[w][h][1] * outputAlpha0 * (1 - blendingFactor)) / outputAlpha1;
-											viewOutput[w][h][2] += (IlluminationI.z * blendingFactor + viewOutput[w][h][2] * outputAlpha0 * (1 - blendingFactor)) / outputAlpha1;
-											//break;
+											
+											//Vector3 inYuv = rgbToYuv.ColMajMatrixMulti(IlluminationI);
+											//inYuv.x = interpolation01(volume[ix][iy][iz], options);
+											//IlluminationI = yuvToRgb.ColMajMatrixMulti(inYuv);
+											
+											Vector3 objcolor = rgbToYuv.ColMajMatrixMulti(diffuseColor);
+											objcolor.x = interpolation01(volume[ix][iy][iz], options);
+											IlluminationI = yuvToRgb.ColMajMatrixMulti(objcolor);
 
-
+											if (!objs.empty()) {
+												pixelOpacity += alphaValues[index];
+												viewOutput[w][h][0] += IlluminationI.x *alphaValues[index];
+												viewOutput[w][h][1] += IlluminationI.y *alphaValues[index];
+												viewOutput[w][h][2] += IlluminationI.z *alphaValues[index];
+											}
+											else {
+												pixelOpacity += 1;
+												viewOutput[w][h][0] += IlluminationI.x;
+												viewOutput[w][h][1] += IlluminationI.y;
+												viewOutput[w][h][2] += IlluminationI.z;
+												break;
+											}
 										}
 										catch (std::exception& e) {
 											stream << e.what() << std::endl;
@@ -704,11 +730,10 @@ public:
 											return;
 										}
 									}
-									if (objs.empty()) break;
-								}
-								break;
-							}
+								//}
+							}				
 						}
+						if (pixelOpacity >= 1) break;
 						start = start + ray.dir*littleStep;
 					}
 				}
@@ -719,20 +744,22 @@ public:
 
 #if DEBUG
 
-		displayOnMATLAB(stream);
+
 		/* Save the output image in a file without going through matlab */
 		std::ofstream ofs("./out.ppm", std::ios::out | std::ios::binary); //DEBUG IMAGE
 		ofs << "P6\n" << options.imageWidth << " " << options.imageHeight << "\n255\n";
 		for (uint32_t j = 0; j < options.imageHeight; ++j) {
 			for (uint32_t i = 0; i < options.imageWidth; ++i) {
-				unsigned char r = (unsigned char)(viewOutput[i][j][0]);
-				unsigned char g = (unsigned char)(viewOutput[i][j][1]);
-				unsigned char b = (unsigned char)(viewOutput[i][j][2]);
+				unsigned char r = (unsigned char)(viewOutput[i][j][0]*255);
+				unsigned char g = (unsigned char)(viewOutput[i][j][1]*255);
+				unsigned char b = (unsigned char)(viewOutput[i][j][2]*255);
 				ofs << r << g << b;
 			}
 		}
 		ofs.close();
 		/* END DEBUG*/
+		stream << "saved on file" << std::endl;
+		displayOnMATLAB(stream);
 #endif DEBUG
 
 	}
