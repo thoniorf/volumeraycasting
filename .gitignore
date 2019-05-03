@@ -5,3 +5,8 @@ GUIproject/
 *.p*
 *.m
 *.mexw64
+*.img
+*.hdr
+*.tiff
+*.tif
+*.VOL

@@ -584,9 +584,9 @@ public:
 
 		Vector3 lightPosition(vol_size[0] / 2 + options.viewOffset, vol_size[1] / 2, vol_size[2] / 2);
 
-		Vector3 ambientColor(0.2, 0.2, 0.2);
-		Vector3 diffuseColor(0.3, 0.3, 0.3);
-		Vector3 specularColor(0.5, 0.5, 0.5);
+		Vector3 ambientColor(0.5, 0.5, 0.5);
+		Vector3 diffuseColor(0.6, 0.6, 0.6);
+		Vector3 specularColor(0.7, 0.7, 0.7);
 
 		double shininess = 16.0;
 		double alpha = 0.5;
@@ -623,7 +623,7 @@ public:
 
 		double tmin = 0,tmax = 0;
 		Color colors;
-		//YuvColor colors;
+		YuvColor yuvColors;
 
 		bool noObj = objs.empty();
 
@@ -632,9 +632,20 @@ public:
 		alphaValues.push_back(0); // strisce
 		alphaValues.push_back(0); // faccia destra
 		alphaValues.push_back(0); // bho
-		alphaValues.push_back(0.1); // faccia sinistra
-		alphaValues.push_back(0.25); // jaw
-		alphaValues.push_back(0.5); // skull
+		alphaValues.push_back(0.2); // faccia sinistra
+		alphaValues.push_back(0.5); // jaw
+		alphaValues.push_back(0.3); // skull
+		
+		std::vector<bool> appliedAlphaValues(7);
+
+		std::vector<TypedArray<double>> frameBuffers;
+		frameBuffers.push_back(factory.createArray<double>({ options.imageWidth,options.imageHeight,3 }));
+		frameBuffers.push_back(factory.createArray<double>({ options.imageWidth,options.imageHeight,3 }));
+		frameBuffers.push_back(factory.createArray<double>({ options.imageWidth,options.imageHeight,3 }));
+		frameBuffers.push_back(factory.createArray<double>({ options.imageWidth,options.imageHeight,3 }));
+		frameBuffers.push_back(factory.createArray<double>({ options.imageWidth,options.imageHeight,3 }));
+		frameBuffers.push_back(factory.createArray<double>({ options.imageWidth,options.imageHeight,3 }));
+		frameBuffers.push_back(factory.createArray<double>({ options.imageWidth,options.imageHeight,3 }));
 
 		for (size_t h = 0; h < options.imageHeight; ++h) {
 			for (size_t w = 0; w < options.imageWidth; ++w) {
@@ -660,6 +671,7 @@ public:
 					Vector3 end = ray.orig + ray.dir *tmax;
 
 					double pixelOpacity = 0;
+					//memset(&appliedAlphaValues[0], 0, appliedAlphaValues.size() * sizeof appliedAlphaValues[0]);
 
 					for (size_t t = 0; t < maxStep; t += littleStep) {
 #if DEBUG
@@ -675,84 +687,102 @@ public:
 						
 						if (grid.isInsideGrid(ix, iy, iz)) {
 							if (volume[ix][iy][iz] >= options.threshold) {
+								int index = getObjIndexIntersection(ix, iy, iz,0, objs);
+								if (index > -2) {
+									try {
 
-								//for (size_t i = 0; i < objs.size() || objs.empty() ; i++) {
-									int index = getObjIndexIntersection(ix, iy, iz,0, objs);
-									if (index > -2) {
-										try {
+										Vector3 grad = getGradient(ix, iy, iz, volume);
+										Vector3 normal = -grad / std::sqrt(grad.norm());
 
-											Vector3 grad = getGradient(ix, iy, iz, volume);
-											Vector3 normal = -grad / std::sqrt(grad.norm());
+										Vector3 lightDir = camera.from.normalize();
+										double distance = lightPosition.length();
+										double lambertian = lightDir.dot(normal);
 
-											Vector3 lightDir = camera.from.normalize();
-											double distance = lightPosition.length();
-											double lambertian = lightDir.dot(normal);
+										Vector3 viewDir = rayStart.normalize();
+										Vector3 halfDir = (lightDir + viewDir).normalize();
 
-											Vector3 viewDir = rayStart.normalize();
-											Vector3 halfDir = (lightDir + viewDir).normalize();
+										double specAngle = halfDir.dot(normal);
+										double specular = std::pow(specAngle, shininess);
 
-											double specAngle = halfDir.dot(normal);
-											double specular = std::pow(specAngle, shininess);
-
-											diffuseColor = colors.getColorByIndex(index);
+										diffuseColor = colors.getColorByIndex(index);
 					
-											// 1* lightAmbientColor  +  1* lightDiffuseColor*dot(lightdir,normals) * weight  +  1* lightSpecularColor * [dot(halfdir,normals)]^shininess * (1-weight)
-											Vector3 IlluminationI = ambientColor + diffuseColor * lambertian * alpha + specularColor * specular * (1 - alpha);
-											
-											//Vector3 inYuv = rgbToYuv.ColMajMatrixMulti(IlluminationI);
-											//inYuv.x = interpolation01(volume[ix][iy][iz], options);
-											//IlluminationI = yuvToRgb.ColMajMatrixMulti(inYuv);
-											
-											Vector3 objcolor = rgbToYuv.ColMajMatrixMulti(diffuseColor);
-											objcolor.x = interpolation01(volume[ix][iy][iz], options);
-											IlluminationI = yuvToRgb.ColMajMatrixMulti(objcolor);
+										// 1* lightAmbientColor  +  1* lightDiffuseColor*dot(lightdir,normals) * weight  +  1* lightSpecularColor * [dot(halfdir,normals)]^shininess * (1-weight)
+										Vector3 IlluminationI = ambientColor + diffuseColor * lambertian * alpha + specularColor * specular * (1 - alpha);
+										//convert to yuv
+										Vector3 yuvIllumination = rgbToYuv.ColMajMatrixMulti(IlluminationI);
+										//get diffuse color in yuv color schema
+										Vector3 yuvDiffuse = yuvColors.getColorByIndex(index);
+										//reset color
+										yuvIllumination.y = yuvDiffuse.y; 
+										yuvIllumination.z = yuvDiffuse.z; 
+										//convert back to rgb
+										IlluminationI = yuvToRgb.ColMajMatrixMulti(yuvIllumination);
 
-											if (!objs.empty()) {
-												pixelOpacity += alphaValues[index];
-												viewOutput[w][h][0] += IlluminationI.x *alphaValues[index];
-												viewOutput[w][h][1] += IlluminationI.y *alphaValues[index];
-												viewOutput[w][h][2] += IlluminationI.z *alphaValues[index];
-											}
-											else {
-												pixelOpacity += 1;
-												viewOutput[w][h][0] += IlluminationI.x;
-												viewOutput[w][h][1] += IlluminationI.y;
-												viewOutput[w][h][2] += IlluminationI.z;
-												break;
+										//maybe use a buffer for each object and then
+										//sum up in the final image multiply with alphas
+
+										//try to sum up the opacity only for different object
+										//so if the obj is the same doesn't sum-up pixelOpacity
+											
+
+										if (!objs.empty()) {
+											//appliedAlphaValues[index] = 1;
+											//pixelOpacity += alphaValues[index];//(appliedAlphaValues[index] != 2) ? alphaValues[index] : 0;
+											//viewOutput[w][h][0] += IlluminationI.x*alphaValues[index];
+											//viewOutput[w][h][1] += IlluminationI.y*alphaValues[index];
+											//viewOutput[w][h][2] += IlluminationI.z*alphaValues[index];
+											if (frameBuffers[index][w][h][0] == 0 && frameBuffers[index][w][h][1] == 0 && frameBuffers[index][w][h][2] == 0) {
+												frameBuffers[index][w][h][0] = IlluminationI.x;
+												frameBuffers[index][w][h][1] = IlluminationI.y;
+												frameBuffers[index][w][h][2] = IlluminationI.z;
 											}
 										}
-										catch (std::exception& e) {
-											stream << e.what() << std::endl;
-											stream << start << std::endl;
-											stream << std::floor(start.x) << " " << std::floor(start.y) << " " << std::floor(start.z) << std::endl;
-											stream << ix << " " << iy << " " << iz << std::endl;
-											displayOnMATLAB(stream);
-											return;
+										else {
+											viewOutput[w][h][0] = IlluminationI.x;
+											viewOutput[w][h][1] = IlluminationI.y;
+											viewOutput[w][h][2] = IlluminationI.z;
+											break;
 										}
+										
+										
 									}
-								//}
+									catch (std::exception& e) {
+										stream << e.what() << std::endl;
+										stream << start << std::endl;
+										stream << std::floor(start.x) << " " << std::floor(start.y) << " " << std::floor(start.z) << std::endl;
+										stream << ix << " " << iy << " " << iz << std::endl;
+										displayOnMATLAB(stream);
+										return;
+									}
+								}
 							}				
 						}
-						if (pixelOpacity >= 1) break;
 						start = start + ray.dir*littleStep;
 					}
 				}
 			}
 		}
-
+		size_t limit = frameBuffers.size();
+		for (int i = 0; i < limit; ++i) {
+			for (size_t h = 0; h < options.imageHeight; ++h) {
+				for (size_t w = 0; w < options.imageWidth; ++w) {
+					viewOutput[w][h][0] += frameBuffers[i][w][h][0] * alphaValues[i];
+					viewOutput[w][h][1] += frameBuffers[i][w][h][1] * alphaValues[i];
+					viewOutput[w][h][2] += frameBuffers[i][w][h][2] * alphaValues[i];
+				}
+			}
+		}
 		outputs[0] = viewOutput;
 
 #if DEBUG
-
-
 		/* Save the output image in a file without going through matlab */
 		std::ofstream ofs("./out.ppm", std::ios::out | std::ios::binary); //DEBUG IMAGE
 		ofs << "P6\n" << options.imageWidth << " " << options.imageHeight << "\n255\n";
 		for (uint32_t j = 0; j < options.imageHeight; ++j) {
 			for (uint32_t i = 0; i < options.imageWidth; ++i) {
-				unsigned char r = (unsigned char)(viewOutput[i][j][0]*255);
-				unsigned char g = (unsigned char)(viewOutput[i][j][1]*255);
-				unsigned char b = (unsigned char)(viewOutput[i][j][2]*255);
+				unsigned char r = (unsigned char)(viewOutput[i][j][0]) * 255;
+				unsigned char g = (unsigned char)(viewOutput[i][j][1]) * 255;
+				unsigned char b = (unsigned char)(viewOutput[i][j][2]) * 255;
 				ofs << r << g << b;
 			}
 		}
@@ -761,7 +791,46 @@ public:
 		stream << "saved on file" << std::endl;
 		displayOnMATLAB(stream);
 #endif DEBUG
+		
+		double s_w = 3, s_h = 3;
+		
+		double im[5][5][3] = { {{0}} };
+		double alphas[3] = { 0.5,0.5,0.5 };
+		double rgbs[3][3] = { {1,0,0},{0.8,0.7,0.3},{0,1,0.5} };
 
+		for (int h = 1; h < s_h-1; ++h) {
+			for (int w = 1; w < s_w-1; ++w) {
+				im[w][h][0] += rgbs[0][0] * alphas[0];
+				im[w][h][1] += rgbs[0][1] * alphas[0];
+				im[w][h][2] += rgbs[0][2] * alphas[0];
+			}
+		}
+		for (int h = 0; h < s_h; ++h) {
+			for (int w = 0; w < s_w; ++w) {
+				im[w][h][0] += rgbs[1][0] * alphas[1];
+				im[w][h][1] += rgbs[1][1] * alphas[1];
+				im[w][h][2] += rgbs[1][2] * alphas[1];
+			}
+		}
+		for (int h = 0; h < s_h; ++h) {
+			for (int w = 0; w < s_w; ++w) {
+				im[w][h][0] += rgbs[2][0] * alphas[2];
+				im[w][h][1] += rgbs[2][1] * alphas[2];
+				im[w][h][2] += rgbs[2][2] * alphas[2];
+			}
+		}
+		/* Save the output image in a file without going through matlab */
+		std::ofstream ofsAlphaTest("./alphaTest.ppm", std::ios::out | std::ios::binary); //DEBUG IMAGE
+		ofsAlphaTest << "P6\n" << s_w << " " << s_h << "\n255\n";
+		for (uint32_t j = 0; j < s_h; ++j) {
+			for (uint32_t i = 0; i < s_w; ++i) {
+				unsigned char r = (unsigned char)(im[i][j][0]*255) ;
+				unsigned char g = (unsigned char)(im[i][j][1]*255) ;
+				unsigned char b = (unsigned char)(im[i][j][2]*255) ;
+				ofsAlphaTest << r << g << b;
+			}
+		}
+		ofsAlphaTest.close();
 	}
    inline
     void  checkArguments(ArgumentList inputs) {
