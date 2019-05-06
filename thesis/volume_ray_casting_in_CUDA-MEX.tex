@@ -1,0 +1,49 @@
+\documentclass[10pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{lmodern}
+\author{Antonio Fortino}
+\title{Volume ray casting accellerated with CUDA in Matlab MEX context}
+\begin{document}
+\maketitle
+\begin{center}
+Academic Year 2018/2019\\
+University of Applied Science Upper Austria Hagenberg Campus\\
+\&\\
+University of Calabria
+\end{center}
+\pagebreak
+\tableofcontents
+\pagebreak
+\section{Introduction}
+
+\section{Basics of Computer graphics and visualization}
+\subsection{Computer graphics concepts}
+\subsubsection{Rendering pipeline}
+\subsection{The Illumination model}
+\subsubsection{Colours schemes}
+\subsection{Volume rendering types}
+There exists different ways to visualize and render a volumetric dataset such as x-Rays, tomography and such; they differ from each other in the way the volume is approached: directly or indirectly.
+Let's start with Indirect volume rendering, such type of volume visualization introduce a new layer of operation after reading the volume but before actually rendering. Indirect volume rendering imply generate an intermediate surface to be able to render the volume. There are different algorithms that falls under this, one of the most well know technique is marching cubes.
+On the other side, we do have Direct Volume rendering technique which visualize the volumetric data directly reading the voxels values and display them; Volume ray casting is the one example of direct volume technique that by piercing the volume with ray and sampling at constant steps voxels' value.
+\subsubsection{Surface rendering}
+Marching cubes algorithm render the dataset, sending through the volume cubes with different configuration whom while traversing it, they depict the actual volume shape. This approach as its own advantages.
+However, one of the main disadvantages are: 
+\subsubsection{Direct volume rendering}
+\subsection{Volume rendering state-of-the-art}
+\section{Visualization algorithm implementation}
+\subsection{Technologies}
+\subsection{Architecture}
+\subsection{Basic volume ray casting}
+\subsection{Parallelize with CUDA}
+\section{Conclusions}
+\subsection{Rendering results}
+\subsection{Results comparisons}
+\subsection{Final considerations}
+\subsection{Discussion}
+\section{Bibliography}
+\end{document}
