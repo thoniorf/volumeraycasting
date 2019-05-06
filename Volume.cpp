@@ -565,7 +565,8 @@ public:
 			const TypedArray<double> obj = inputs[7][i];
 				objs.push_back(obj);
 		}
-		
+		StructArray const infos = inputs[8];
+		//std::cout << infos["threshold"] << std::endl;
 
 		options.setImageSize(viewSize[0], viewSize[1]);
 		options.setIntensity(inputs[3][0], inputs[4][0]);
@@ -636,16 +637,16 @@ public:
 		alphaValues.push_back(0.5); // jaw
 		alphaValues.push_back(0.3); // skull
 		
-		std::vector<bool> appliedAlphaValues(7);
+		std::vector<uint16_t> appliedAlphaValues(7,0);
 
-		std::vector<TypedArray<double>> frameBuffers;
-		frameBuffers.push_back(factory.createArray<double>({ options.imageWidth,options.imageHeight,3 }));
-		frameBuffers.push_back(factory.createArray<double>({ options.imageWidth,options.imageHeight,3 }));
-		frameBuffers.push_back(factory.createArray<double>({ options.imageWidth,options.imageHeight,3 }));
-		frameBuffers.push_back(factory.createArray<double>({ options.imageWidth,options.imageHeight,3 }));
-		frameBuffers.push_back(factory.createArray<double>({ options.imageWidth,options.imageHeight,3 }));
-		frameBuffers.push_back(factory.createArray<double>({ options.imageWidth,options.imageHeight,3 }));
-		frameBuffers.push_back(factory.createArray<double>({ options.imageWidth,options.imageHeight,3 }));
+		//std::vector<TypedArray<double>> frameBuffers;
+		//frameBuffers.push_back(factory.createArray<double>({ options.imageWidth,options.imageHeight,3 }));
+		//frameBuffers.push_back(factory.createArray<double>({ options.imageWidth,options.imageHeight,3 }));
+		//frameBuffers.push_back(factory.createArray<double>({ options.imageWidth,options.imageHeight,3 }));
+		//frameBuffers.push_back(factory.createArray<double>({ options.imageWidth,options.imageHeight,3 }));
+		//frameBuffers.push_back(factory.createArray<double>({ options.imageWidth,options.imageHeight,3 }));
+		//frameBuffers.push_back(factory.createArray<double>({ options.imageWidth,options.imageHeight,3 }));
+		//frameBuffers.push_back(factory.createArray<double>({ options.imageWidth,options.imageHeight,3 }));
 
 		for (size_t h = 0; h < options.imageHeight; ++h) {
 			for (size_t w = 0; w < options.imageWidth; ++w) {
@@ -671,7 +672,8 @@ public:
 					Vector3 end = ray.orig + ray.dir *tmax;
 
 					double pixelOpacity = 0;
-					//memset(&appliedAlphaValues[0], 0, appliedAlphaValues.size() * sizeof appliedAlphaValues[0]);
+					double objectOpacity = 1;
+					memset(&appliedAlphaValues[0], 0, appliedAlphaValues.size() * sizeof appliedAlphaValues[0]);
 
 					for (size_t t = 0; t < maxStep; t += littleStep) {
 #if DEBUG
@@ -718,31 +720,25 @@ public:
 										//convert back to rgb
 										IlluminationI = yuvToRgb.ColMajMatrixMulti(yuvIllumination);
 
-										//maybe use a buffer for each object and then
-										//sum up in the final image multiply with alphas
-
-										//try to sum up the opacity only for different object
-										//so if the obj is the same doesn't sum-up pixelOpacity
+										if (index>-1) {
 											
-
-										if (!objs.empty()) {
-											//appliedAlphaValues[index] = 1;
-											//pixelOpacity += alphaValues[index];//(appliedAlphaValues[index] != 2) ? alphaValues[index] : 0;
-											//viewOutput[w][h][0] += IlluminationI.x*alphaValues[index];
-											//viewOutput[w][h][1] += IlluminationI.y*alphaValues[index];
-											//viewOutput[w][h][2] += IlluminationI.z*alphaValues[index];
-											if (frameBuffers[index][w][h][0] == 0 && frameBuffers[index][w][h][1] == 0 && frameBuffers[index][w][h][2] == 0) {
-												frameBuffers[index][w][h][0] = IlluminationI.x;
-												frameBuffers[index][w][h][1] = IlluminationI.y;
-												frameBuffers[index][w][h][2] = IlluminationI.z;
+											if (appliedAlphaValues[index] == 0) {
+												appliedAlphaValues[index] = 1;
+												pixelOpacity += alphaValues[index];
+												viewOutput[w][h][0] += IlluminationI.x * alphaValues[index];
+												viewOutput[w][h][1] += IlluminationI.y * alphaValues[index];
+												viewOutput[w][h][2] += IlluminationI.z * alphaValues[index];
 											}
+
 										}
 										else {
+											pixelOpacity++;
 											viewOutput[w][h][0] = IlluminationI.x;
 											viewOutput[w][h][1] = IlluminationI.y;
 											viewOutput[w][h][2] = IlluminationI.z;
-											break;
 										}
+
+										if (pixelOpacity >= 1) break;
 										
 										
 									}
@@ -762,16 +758,7 @@ public:
 				}
 			}
 		}
-		size_t limit = frameBuffers.size();
-		for (int i = 0; i < limit; ++i) {
-			for (size_t h = 0; h < options.imageHeight; ++h) {
-				for (size_t w = 0; w < options.imageWidth; ++w) {
-					viewOutput[w][h][0] += frameBuffers[i][w][h][0] * alphaValues[i];
-					viewOutput[w][h][1] += frameBuffers[i][w][h][1] * alphaValues[i];
-					viewOutput[w][h][2] += frameBuffers[i][w][h][2] * alphaValues[i];
-				}
-			}
-		}
+
 		outputs[0] = viewOutput;
 
 #if DEBUG
@@ -791,46 +778,6 @@ public:
 		stream << "saved on file" << std::endl;
 		displayOnMATLAB(stream);
 #endif DEBUG
-		
-		double s_w = 3, s_h = 3;
-		
-		double im[5][5][3] = { {{0}} };
-		double alphas[3] = { 0.5,0.5,0.5 };
-		double rgbs[3][3] = { {1,0,0},{0.8,0.7,0.3},{0,1,0.5} };
-
-		for (int h = 1; h < s_h-1; ++h) {
-			for (int w = 1; w < s_w-1; ++w) {
-				im[w][h][0] += rgbs[0][0] * alphas[0];
-				im[w][h][1] += rgbs[0][1] * alphas[0];
-				im[w][h][2] += rgbs[0][2] * alphas[0];
-			}
-		}
-		for (int h = 0; h < s_h; ++h) {
-			for (int w = 0; w < s_w; ++w) {
-				im[w][h][0] += rgbs[1][0] * alphas[1];
-				im[w][h][1] += rgbs[1][1] * alphas[1];
-				im[w][h][2] += rgbs[1][2] * alphas[1];
-			}
-		}
-		for (int h = 0; h < s_h; ++h) {
-			for (int w = 0; w < s_w; ++w) {
-				im[w][h][0] += rgbs[2][0] * alphas[2];
-				im[w][h][1] += rgbs[2][1] * alphas[2];
-				im[w][h][2] += rgbs[2][2] * alphas[2];
-			}
-		}
-		/* Save the output image in a file without going through matlab */
-		std::ofstream ofsAlphaTest("./alphaTest.ppm", std::ios::out | std::ios::binary); //DEBUG IMAGE
-		ofsAlphaTest << "P6\n" << s_w << " " << s_h << "\n255\n";
-		for (uint32_t j = 0; j < s_h; ++j) {
-			for (uint32_t i = 0; i < s_w; ++i) {
-				unsigned char r = (unsigned char)(im[i][j][0]*255) ;
-				unsigned char g = (unsigned char)(im[i][j][1]*255) ;
-				unsigned char b = (unsigned char)(im[i][j][2]*255) ;
-				ofsAlphaTest << r << g << b;
-			}
-		}
-		ofsAlphaTest.close();
 	}
    inline
     void  checkArguments(ArgumentList inputs) {
