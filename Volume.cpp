@@ -6,8 +6,7 @@
 #endif // !VOLUME
 #define _USE_MATH_DEFINES
 
-#include "mex.hpp"
-#include "mexAdapter.hpp"
+#include "mex.h"
 #include <string>
 #include <vector>
 #include <ctime>
@@ -16,15 +15,9 @@
 #include <fstream>
 #include <exception>
 
-using matlab::mex::ArgumentList;
-using namespace matlab::engine;
-using namespace matlab::data;
-
-std::ostringstream stream;
 std::time_t timer;
 int timeout = 300;
 
-// arancione, rosso, giallo, fucsia, verde chiaro, rosa, azzurro 
 struct Options {
 public:
 	double threshold = 0;
@@ -476,334 +469,260 @@ Vector3 rasterToScreen(size_t w, size_t h, double z, Options options) {
 
 	return Vector3(cameraX, cameraY, z);
 }
+
 inline
-Vector3 getGradient(const int& ix, const int& iy, const int& iz, const TypedArray<double>& volume) {
+Vector3 getGradient(const int& ix, const int& iy, const int& iz, const mxDouble * volume, const mwSize* size) {
 	// component-wise linear interpolation
 	double a, b, c;
 	int xi = (int)(ix + 0.5);
 	double xT = ix + 0.5 - xi;
-	a = (volume[xi][iy][iz] - volume[xi - 1][iy][iz]) * (1.0 - xT) + (volume[xi + 1][iy][iz] - volume[xi][iy][iz]) * xT;
+	int linearXi = xi + iy * size[0] + iz * (size[0] * size[1]);
+	int linearXiB = xi+1 + iy * size[0] + iz * (size[0] * size[1]);
+	int linearXib = xi-1 + iy * size[0] + iz * (size[0] * size[1]);
 
+	a = (volume[linearXi] - volume[linearXib]) * (1.0 - xT) + (volume[linearXiB] - volume[linearXi]) * xT;
+	
 	int yi = (int)(iy + 0.5);
 	double yT = iy + 0.5 - yi;
-	b = (volume[ix][iy][iz] - volume[ix][iy - 1][iz]) * (1.0 - yT) + (volume[ix][iy + 1][iz] - volume[ix][iy][iz]) * yT;
-
+	int linearYi = ix + yi * size[0] + iz * (size[0] * size[1]);
+	int linearYiB = ix + (yi+1) * size[0] + iz * (size[0] * size[1]);
+	int linearYib = ix + (yi-1) * size[0] + iz * (size[0] * size[1]);
+	
+	b = (volume[linearYi] - volume[linearYib]) * (1.0 - yT) + (volume[linearYiB] - volume[linearYi]) * yT;
+	
 	int zi = (int)(iz + 0.5);
 	double zT = iz + 0.5 - zi;
-	c = (volume[ix][iy][zi] - volume[ix][iy][zi - 1]) * (1.0 - zT) + (volume[ix][iy][zi + 1] - volume[ix][iy][zi]) * zT;
-
+	int linearZi = ix + iy * size[0] + zi * (size[0] * size[1]);
+	int linearZiB = ix + iy * size[0] + (zi+1) * (size[0] * size[1]);
+	int linearZib = ix + iy * size[0] + (zi-1) * (size[0] * size[1]);
+	
+	c = (volume[linearZi] - volume[linearZib]) * (1.0 - zT) + (volume[linearZiB] - volume[linearZi]) * zT;
+	
 	return Vector3(a, b, c);
 }
-int getObjIndexIntersection(const int& ix, const int& iy, const int& iz, const size_t i, const std::vector<TypedArray<double>>& objs) {
-	if (objs.size() == 0) return -1;
-#if COMBINEDSINGLEFILE
-	if (objs[i][ix][iy][iz] > 0) return (int)objs[i][ix][iy][iz];
-#else
-	if (objs[i][ix][iy][iz] == 1) return i;
-#endif COMBINEDSINGLEFILE
-	return -2;
-}
 
-
-class MexFunction : public matlab::mex::Function {
-	ArrayFactory factory;
-	std::shared_ptr<matlab::engine::MATLABEngine> matlabPtr = getEngine();
+void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
+	std::time(&timer);
 	Options options;
 
+	const mxDouble *volume = mxGetDoubles(prhs[0]);
+	const mwSize *sizeArray = mxGetDimensions(prhs[0]);
+	const mwSize numberOfVoxels = mxGetNumberOfElements(prhs[0]);
 
-public:
-	void debugAffineTransformation() {
-		const double theta = degToRad(45);
-		const double phi = degToRad(45);
-		const double sigma = degToRad(45);
-		Matrix4x4 rZ = Matrix4x4(std::cos(theta), -1 * std::sin(theta), 0, 0,
-			std::sin(theta), std::cos(theta), 0, 0,
-			0, 0, 1, 0,
-			0, 0, 0, 1);
-		Matrix4x4 rY = Matrix4x4(std::cos(phi), 0, std::sin(phi), 0,
-			0, 1, 0, 0,
-			-1 * std::sin(phi), 0, std::cos(phi), 0,
-			0, 0, 0, 1);
-		Matrix4x4 rX = Matrix4x4(1, 0, 0, 0,
-			0, std::cos(sigma), -1 * std::sin(sigma), 0,
-			0, std::sin(sigma), std::cos(sigma), 0,
-			0, 0, 0, 1);
-		Vector3 v1(1, 0, 0);
-		Vector3 v2(0, 0, 1);
-		Vector3 v3(0, 1, 0);
+	const mxArray *objectsVolumeArray = prhs[1];
+	const mxDouble* objectVolume = mxGetDoubles(objectsVolumeArray);
+	const mwSize *objectSizeArray = mxGetDimensions(prhs[0]);
+	const mwSize numberOfObjects = mxGetNumberOfElements(objectsVolumeArray);
 
-		Vector3 vz = rZ.DirMatrixMulti(v1);
-		Vector3 vy = rY.DirMatrixMulti(vz);
-		Vector3 vx = rX.DirMatrixMulti(vz);
-		stream << "DEBUG AFFINE TRANSFORMATION" << std::endl;
-		stream << vz << std::endl;
-		stream << vy << std::endl;
-		stream << vx << std::endl;
+	const mxDouble *thresholdArray = mxGetDoubles(mxGetField(prhs[2], 0, "threshold"));
+	const mxDouble *viewArray = mxGetDoubles(mxGetField(prhs[2], 0, "view"));
+	const mxDouble *alphaArray = mxGetDoubles(mxGetField(prhs[2], 0, "alpha"));
+	const mxDouble *specularityArray = mxGetDoubles(mxGetField(prhs[2], 0, "specularity"));
+	const mxDouble *intensityArray = mxGetDoubles(mxGetField(prhs[2], 0, "intensity"));
+	const mxDouble *rotationArray = mxGetDoubles(mxGetField(prhs[2], 0, "rotation"));
+	const mxDouble *colorArray = mxGetDoubles(mxGetField(prhs[2], 0, "colors"));
 
-		// moltiplicato per una distanza restituisce backward
-		Vector3 dir(0);
-		dir.x = std::cosf(phi) * std::cosf(theta);
-		dir.y = std::sinf(phi);
-		dir.z = std::cosf(phi) * std::sinf(theta);
-		dir = dir * 200;
-		stream << "trig: " << dir << std::endl;
-		stream << "END DEBUG" << std::endl;
-		displayOnMATLAB(stream);
-	}
+	const mwSize alphaSize = mxGetNumberOfElements(mxGetField(prhs[2], 0, "alpha"));
+	if(numberOfObjects > 0)
+	std::cout << objectVolume[150] << std::endl;
 
-	void operator()(ArgumentList outputs, ArgumentList inputs) {
-		std::time(&timer);
-		//debugAffineTransformation();
-		checkArguments(inputs);
+	std::cout << "SIZE " << sizeArray[0] << " " << sizeArray[1] << " " << sizeArray[2] << std::endl
+		<< "VOX " << numberOfVoxels << std::endl
+		<< "VIEW " << viewArray[0] << " " << viewArray[1] << std::endl
+		<< "ROT " << rotationArray[0] << " " << rotationArray[1] << " " << rotationArray[2] << std::endl
+		<< "INT " << intensityArray[0] << " " << intensityArray[1] << std::endl
+		<< "THR " << thresholdArray[0] << std::endl
+		<< "OBJS SIZE " << objectSizeArray[0] << " " << objectSizeArray[1] << " " << objectSizeArray[2] << std::endl;
 
-		const TypedArray<double> volume = inputs[0];
-		
-		const StructArray infos = inputs[2];
 
-		const TypedArray<double> vol_size = inputs[4]; 
-		const TypedArray<double> sizeArray = infos[0]["size"];
-		const TypedArray<double> thresholdArray = infos[0]["threshold"];
-		const TypedArray<double> viewArray = infos[0]["view"];
-		const TypedArray<double> alphaArray = infos[0]["alpha"];
-		const TypedArray<double> specularityArray = infos[0]["specularity"];
-		const TypedArray<double> intensityArray = infos[0]["intensity"];
-		const TypedArray<double> rotationArray = infos[0]["rotation"];
-		const TypedArray<double> colorArray = infos[0]["colors"];
+	std::vector<mxDouble*> objectsVector;
+	if (numberOfObjects > 0) {
+		size_t objIndex = 0;
+		for (int j = 0; j < alphaSize; ++j) {
+			if (alphaArray[j] > 0.0) {
 
-		size_t Nx = (int)(sizeArray[0]), Ny = (int)(sizeArray[1]), Nz = (int)(sizeArray[2]);
-		std::vector<TypedArray<double>> objectArray;
-
-		if (inputs[1].getNumberOfElements() > 0) {
-
-			const TypedArray<double> objectVolume = inputs[1][0];
-			for (int i = 0; i < inputs[1].getNumberOfElements();++i) {
-				size_t objIndex = 0;
-				for (int j = 0; j < alphaArray.getNumberOfElements();++j) {
-					if (alphaArray[j] > 0.0) {
-						objectArray.push_back(factory.createArray<double>({ Nx,Ny,Nz }));
-						for (int x = 0; x < Nx; ++x) {
-							for (int y = 0; y < Ny; ++y) {
-								for (int z = 0; z < Nz; ++z) {
-									if (j == objectVolume[x][y][z]) {
-										objectArray[objIndex][x][y][z] = 1;
-									}
-								}
-							}
+				mxDouble * tmpVolume = mxGetDoubles(mxCreateNumericArray(3, sizeArray, mxDOUBLE_CLASS, mxREAL));			
+					
+				for (int x = 0; x < sizeArray[0]; ++x) {
+					for (int y = 0; y < sizeArray[1];++y) {
+						for (int z = 0; z < sizeArray[2];++z) {
+							int linearIndex = x + y * sizeArray[0] + z * (sizeArray[0] * sizeArray[1]);
+							double v = objectVolume[linearIndex];
+							if(v == j)
+								tmpVolume[linearIndex] = 1;
+							else
+								tmpVolume[linearIndex] = 0;
 						}
-						objIndex++;
 					}
 				}
+				objectsVector.push_back(tmpVolume);
+				objIndex++;
 			}
 		}
+	}
 
-		options.setImageSize(viewArray[0], viewArray[1]);
-		options.setIntensity(intensityArray[0], intensityArray[1]);
-		options.threshold = (thresholdArray[0]);
-		options.fov = 52.51;
-		options.viewOffset = 200;
-		options.scale = std::tan(degToRad((options.fov * 0.5)));
-		options.imageAspectRatio = options.imageWidth / options.imageHeight;
 
-		Matrix4x4 rgbToYuv(0.2126, 0.7152, 0.0722, 0, -0.09991, -0.33609, 0.436, 0, 0.615, -0.55861, -0.05639, 0, 0, 0, 0, 0);
-		Matrix4x4 yuvToRgb(1, 0, 1.28033, 0, 1, -0.21482, -0.38059, 0, 1, 2.12798, 0, 0, 0, 0, 0, 0);
+	options.setImageSize(viewArray[0], viewArray[1]);
+	options.setIntensity(intensityArray[0], intensityArray[1]);
+	options.threshold = (thresholdArray[0]);
+	options.fov = 52.51;
+	options.viewOffset = 200;
+	options.scale = std::tan(degToRad((options.fov * 0.5)));
+	options.imageAspectRatio = options.imageWidth / options.imageHeight;
 
-		TypedArray<double> viewOutput = factory.createArray<double>({ options.imageWidth,options.imageHeight,3 });
+	Matrix4x4 rgbToYuv(0.2126, 0.7152, 0.0722, 0, -0.09991, -0.33609, 0.436, 0, 0.615, -0.55861, -0.05639, 0, 0, 0, 0, 0);
+	Matrix4x4 yuvToRgb(1, 0, 1.28033, 0, 1, -0.21482, -0.38059, 0, 1, 2.12798, 0, 0, 0, 0, 0, 0);
 
-		Vector3 lightPosition(sizeArray[0] / 2 + options.viewOffset, sizeArray[1] / 2, sizeArray[2] / 2);
+	Vector3 lightPosition(sizeArray[0] / 2 + options.viewOffset, sizeArray[1] / 2, sizeArray[2] / 2);
 
-		Vector3 ambientColor(0.5, 0.5, 0.5);
-		Vector3 diffuseColor(0.6, 0.6, 0.6);
-		Vector3 specularColor(0.7, 0.7, 0.7);
+	Vector3 ambientColor(0.5, 0.5, 0.5);
+	Vector3 diffuseColor(0.6, 0.6, 0.6);
+	Vector3 specularColor(0.7, 0.7, 0.7);
 
-		double shininess = 16.0;
-		double alpha = 0.5;
+	double shininess = 16.0;
+	double specularity = specularityArray[0];
 
-		Grid grid(Vector3(0), Vector3(sizeArray[0], sizeArray[1], sizeArray[2]));
+	Grid grid(Vector3(0), Vector3(sizeArray[0], sizeArray[1], sizeArray[2]));
 
-		Camera camera(Vector3(sizeArray[0] / 2 + options.viewOffset, sizeArray[1] / 2, sizeArray[2] / 2), Vector3(sizeArray[0] / 2, sizeArray[1] / 2, sizeArray[2] / 2));
+	Camera camera(Vector3(sizeArray[0] / 2 + options.viewOffset, sizeArray[1] / 2, sizeArray[2] / 2), Vector3(sizeArray[0] / 2, sizeArray[1] / 2, sizeArray[2] / 2));
 
-		camera.pitch(rotationArray[1]);
-		camera.roll(rotationArray[2]);
-		camera.yaw(rotationArray[0]);
-		camera.setupLookAtMatrix();
+	camera.pitch(rotationArray[1]);
+	camera.roll(rotationArray[2]);
+	camera.yaw(rotationArray[0]);
+	camera.setupLookAtMatrix();
 
-		double littleStep = 1;
-		double maxStep = std::sqrt(sizeArray[0] * sizeArray[0] + sizeArray[1] * sizeArray[1] + sizeArray[2] * sizeArray[2]);
+	double littleStep = 1;
+	double maxStep = std::sqrt(sizeArray[0] * sizeArray[0] + sizeArray[1] * sizeArray[1] + sizeArray[2] * sizeArray[2]);
 
-		double halfWidth = std::fabs(options.imageWidth / 2);
-		double halfHeight = std::fabs(options.imageHeight / 2);
+	double halfWidth = std::fabs(options.imageWidth / 2);
+	double halfHeight = std::fabs(options.imageHeight / 2);
 
-		Color colors;
-		YuvColor yuvColors;
+	Color colors;
+	YuvColor yuvColors;
 
-		double tmin = 0, tmax = 0;
+	double tmin = 0, tmax = 0;
 
-		std::vector<int> visibleObj;
-		std::vector<double> visibleAlpha;
-		std::vector<TypedArray<double>> frameBuffers;
-		std::vector<TypedArray<uint8_t>> computedVolumes;
-		if (objectArray.empty()) {
-			visibleAlpha.push_back(1);
-			visibleObj.push_back(-1);
-			frameBuffers.push_back(factory.createArray<double>({ options.imageWidth,options.imageHeight,3 }));
-		}
-		else {
+	mwSize frameDimensions[3] = { options.imageWidth,options.imageHeight,3 };
+	plhs[0] = mxCreateNumericArray(3, frameDimensions, mxDOUBLE_CLASS, mxREAL);
+	mxDouble* viewOutput = mxGetDoubles(plhs[0]);
+	for (int i = 0; i < options.imageWidth*options.imageHeight * 3; ++i) {
+		viewOutput[i] = 0;
+	}
+	size_t frameDimension = options.imageHeight * options.imageWidth;
+	std::vector<int> visibleObj;
+	std::vector<double> visibleAlpha;
+	std::vector<mxDouble*> frameBuffers;
+	if (numberOfObjects == 0) {
+		visibleAlpha.push_back(1);
+		visibleObj.push_back(-1);
+		frameBuffers.push_back(mxGetDoubles(mxCreateNumericArray(3, frameDimensions, mxDOUBLE_CLASS, mxREAL)));
+	}
+	else {
+		for (size_t i = 0; i < alphaSize; ++i) {
+			if (alphaArray[i] > 0) {
+				std::cout << "Added " << i << " with alpha " << alphaArray[i] << std::endl;
+				visibleAlpha.push_back(alphaArray[i]);
+				visibleObj.push_back(i);
+				frameBuffers.push_back(mxGetDoubles(mxCreateNumericArray(3, frameDimensions, mxDOUBLE_CLASS, mxREAL)));
 
-			for (size_t i = 0; i < alphaArray.getNumberOfElements(); ++i) {
-				if (alphaArray[i] > 0) {
-					std::cout << "Added " << i << " with alpha " << alphaArray[i] << std::endl;
-					visibleAlpha.push_back(alphaArray[i]);
-					visibleObj.push_back(i);
-					frameBuffers.push_back(factory.createArray<double>({ options.imageWidth,options.imageHeight,3 }));
-					
-				}
 			}
 		}
+	}
 
-		for (size_t iObj = 0; iObj < visibleObj.size() ; ++iObj) {
-			for (size_t h = 0; h < options.imageHeight; ++h) {
-				for (size_t w = 0; w < options.imageWidth; ++w) {
+	
 
-					frameBuffers[iObj][w][h][0] = 0;
-					frameBuffers[iObj][w][h][1] = 0;
-					frameBuffers[iObj][w][h][2] = 0;
+	for (size_t iObj = 0; iObj < visibleObj.size(); ++iObj) {
+		for (size_t h = 0; h < options.imageHeight; ++h) {
+			for (size_t w = 0; w < options.imageWidth; ++w) {
+				frameBuffers[iObj][w + h * options.imageWidth]						= 0;
+				frameBuffers[iObj][w + h * options.imageWidth + frameDimension]		= 0;
+				frameBuffers[iObj][w + h * options.imageWidth + frameDimension * 2] = 0;
 
-					double x = w - halfWidth;
-					double y = h - halfHeight;
+				double x = w - halfWidth;
+				double y = h - halfHeight;
 
-					Vector3 rayStart = camera.lookAt.VecMatrixMulti(Vector3(x, y, 0));
-					Vector3 rayEnd = camera.lookAt.VecMatrixMulti(Vector3(x, y, 1));
+				Vector3 rayStart = camera.lookAt.VecMatrixMulti(Vector3(x, y, 0));
+				Vector3 rayEnd = camera.lookAt.VecMatrixMulti(Vector3(x, y, 1));
 
-					Ray ray(rayStart, rayEnd);
+				Ray ray(rayStart, rayEnd);
 
-					if (computeRayABBoxIntersection(ray, tmin, tmax, grid)) {
+				if (computeRayABBoxIntersection(ray, tmin, tmax, grid)) {
 
-						Vector3 start = ray.orig + ray.dir *tmin;
-						Vector3 end = ray.orig + ray.dir *tmax;
+					Vector3 start = ray.orig + ray.dir *tmin;
+					Vector3 end = ray.orig + ray.dir *tmax;
 
-						for (size_t t = 0; t < maxStep; t += littleStep) {
+					for (size_t t = 0; t < maxStep; t += littleStep) {
 
 #if DEBUG
-							if (time(NULL) - timer >= timeout)
-							{
-								stream << "TIMEOUT" << std::endl;
-								break;
-							}
+						if (time(NULL) - timer >= timeout)
+						{
+							std::cout << "TIMEOUT" << std::endl;
+							break;
+						}
 #endif DEBUG
-							int ix = std::floor(start.x) > 0 ? std::floor(start.x) - 1 : 0;
-							int iy = std::floor(start.y) > 0 ? std::floor(start.y) - 1 : 0;
-							int iz = std::floor(start.z) > 0 ? std::floor(start.z) - 1 : 0;
+						int ix = std::floor(start.x) > 0 ? std::floor(start.x) - 1 : 0;
+						int iy = std::floor(start.y) > 0 ? std::floor(start.y) - 1 : 0;
+						int iz = std::floor(start.z) > 0 ? std::floor(start.z) - 1 : 0;
+						//int linearIndex = iz + iy*sizeArray[2] +ix*sizeArray[2]*sizeArray[1]
+						int linearIndex = ix + iy * sizeArray[0] + iz * (sizeArray[0] * sizeArray[1]);
+						if (grid.isInsideGrid(ix, iy, iz)) {
+							if (volume[linearIndex] >= options.threshold && (visibleObj[iObj] == -1 || objectsVector[iObj][linearIndex] == 1)) { 
 
-							if (grid.isInsideGrid(ix, iy, iz)) {
-								if (volume[ix][iy][iz] >= options.threshold && (visibleObj[iObj] == -1 || objectArray[iObj][ix][iy][iz] == 1)) { //objectArray[iObj] non funziona perché contiene un solo elemento, cambiarlo creando più volumi
+								try {
+									Vector3 grad = getGradient(ix, iy, iz, volume,sizeArray);
+									Vector3 normal = -grad / std::sqrt(grad.norm());
 
-									//int index = (objectArray.empty()) ? -1 : iObj;//getObjIndexIntersection(ix, iy, iz, 0, objectArray);
+									Vector3 lightDir = camera.from.normalize();
+									double distance = lightPosition.length();
+									double lambertian = lightDir.dot(normal);
 
-									try {
-										Vector3 grad = getGradient(ix, iy, iz, volume);
-										Vector3 normal = -grad / std::sqrt(grad.norm());
+									Vector3 viewDir = rayStart.normalize();
+									Vector3 halfDir = (lightDir + viewDir).normalize();
 
-										Vector3 lightDir = camera.from.normalize();
-										double distance = lightPosition.length();
-										double lambertian = lightDir.dot(normal);
+									double specAngle = halfDir.dot(normal);
+									double specular = std::pow(specAngle, shininess);
 
-										Vector3 viewDir = rayStart.normalize();
-										Vector3 halfDir = (lightDir + viewDir).normalize();
+									diffuseColor = colors.getColorByIndex(visibleObj[iObj]);
 
-										double specAngle = halfDir.dot(normal);
-										double specular = std::pow(specAngle, shininess);
+									// 1* lightAmbientColor  +  1* lightDiffuseColor*dot(lightdir,normals) * weight  +  1* lightSpecularColor * [dot(halfdir,normals)]^shininess * (1-weight)
+									Vector3 IlluminationI = ambientColor + diffuseColor * lambertian * specularity + specularColor * specular * (1 - specularity);
+									//convert to yuv
+									Vector3 yuvIllumination = rgbToYuv.ColMajMatrixMulti(IlluminationI);
+									//get diffuse color in yuv color schema
+									Vector3 yuvDiffuse = yuvColors.getColorByIndex(visibleObj[iObj]);
+									//reset color
+									yuvIllumination.y = yuvDiffuse.y;
+									yuvIllumination.z = yuvDiffuse.z;
+									//convert back to rgb
+									IlluminationI = yuvToRgb.ColMajMatrixMulti(yuvIllumination);
 
-										diffuseColor = colors.getColorByIndex(visibleObj[iObj]);
+									// clamp new illumination to valid rgb value.ie: x<0-> x=0, x>1 -> x=1
 
-										// 1* lightAmbientColor  +  1* lightDiffuseColor*dot(lightdir,normals) * weight  +  1* lightSpecularColor * [dot(halfdir,normals)]^shininess * (1-weight)
-										Vector3 IlluminationI = ambientColor + diffuseColor * lambertian * alpha + specularColor * specular * (1 - alpha);
-										//convert to yuv
-										Vector3 yuvIllumination = rgbToYuv.ColMajMatrixMulti(IlluminationI);
-										//get diffuse color in yuv color schema
-										Vector3 yuvDiffuse = yuvColors.getColorByIndex(visibleObj[iObj]);
-										//reset color
-										yuvIllumination.y = yuvDiffuse.y;
-										yuvIllumination.z = yuvDiffuse.z;
-										//convert back to rgb
-										IlluminationI = yuvToRgb.ColMajMatrixMulti(yuvIllumination);
+									frameBuffers[iObj][w + h * options.imageWidth] = IlluminationI.x;
+									frameBuffers[iObj][w + h * options.imageWidth + frameDimension] = IlluminationI.y;
+									frameBuffers[iObj][w + h * options.imageWidth + frameDimension * 2] = IlluminationI.z;
+									break;
 
-										// clamp new illumination to valid rgb value.ie: x<0-> x=0, x>1 -> x=1
-										//if (index == visibleObj[iObj]) {
-
-											frameBuffers[iObj][w][h][0] = IlluminationI.x;
-											frameBuffers[iObj][w][h][1] = IlluminationI.y;
-											frameBuffers[iObj][w][h][2] = IlluminationI.z;
-											break;
-										//}
-
-									}
-									catch (std::exception& e) {
-										stream << e.what() << std::endl;
-										stream << start << std::endl;
-										stream << std::floor(start.x) << " " << std::floor(start.y) << " " << std::floor(start.z) << std::endl;
-										stream << ix << " " << iy << " " << iz << std::endl;
-										displayOnMATLAB(stream);
-										return;
-									}
+								}
+								catch (std::exception& e) {
+									std::cout << e.what() << std::endl;
+									std::cout << start << std::endl;
+									std::cout << std::floor(start.x) << " " << std::floor(start.y) << " " << std::floor(start.z) << std::endl;
+									std::cout << ix << " " << iy << " " << iz << std::endl;
+									return;
 								}
 							}
-							start = start + ray.dir*littleStep;
 						}
+						start = start + ray.dir*littleStep;
 					}
-					viewOutput[w][h][0] += frameBuffers[iObj][w][h][0] * visibleAlpha[iObj];
-					viewOutput[w][h][1] += frameBuffers[iObj][w][h][1] * visibleAlpha[iObj];
-					viewOutput[w][h][2] += frameBuffers[iObj][w][h][2] * visibleAlpha[iObj];
 				}
-			}
-
-			//if (objectArray.empty()) break;
-		}
-		outputs[0] = viewOutput;
-
-	#if DEBUG
-		stream << "VOL: " << volume.getNumberOfElements() << std::endl;
-		stream << "OBJS: " << objectArray.size() << std::endl;
-		stream << "INT: " << options.minIntensity << " " << options.maxIntensity << std::endl;
-		stream << "SIZE: " << sizeArray[0] << " " << sizeArray[1] << " " << sizeArray[2] << std::endl;
-		stream << "VIEW: " << options.imageWidth << " " << options.imageHeight << std::endl;
-		stream << "ROT: y-" << rotationArray[0] << " p-" << rotationArray[1] << " r-" << rotationArray[2] << std::endl;
-
-		stream << camera.lookAt << std::endl;
-
-		/* Save the output image in a file without going through matlab */
-		std::ofstream ofs("./out.ppm", std::ios::out | std::ios::binary); //DEBUG IMAGE
-		ofs << "P6\n" << options.imageWidth << " " << options.imageHeight << "\n255\n";
-		for (uint32_t j = 0; j < options.imageHeight; ++j) {
-			for (uint32_t i = 0; i < options.imageWidth; ++i) {
-				unsigned char r = (unsigned char)(viewOutput[i][j][0] * 255);
-				unsigned char g = (unsigned char)(viewOutput[i][j][1] * 255);
-				unsigned char b = (unsigned char)(viewOutput[i][j][2] * 255);
-				ofs << r << g << b;
+				viewOutput[w + h * options.imageWidth] += visibleAlpha[iObj] * frameBuffers[iObj][w + h * options.imageWidth];
+				viewOutput[w + h * options.imageWidth + frameDimension] += visibleAlpha[iObj] * frameBuffers[iObj][w + h * options.imageWidth + frameDimension];
+				viewOutput[w + h * options.imageWidth + frameDimension * 2] += visibleAlpha[iObj] *  frameBuffers[iObj][w + h * options.imageWidth + frameDimension * 2];
 			}
 		}
-		ofs.close();
-		/* END DEBUG*/
-		stream << "saved on file" << std::endl;
-		displayOnMATLAB(stream);
-	#endif DEBUG
-	}
-
-	inline
-		void  checkArguments(ArgumentList inputs) {
-		if (inputs[0].getType() != ArrayType::DOUBLE)
-		{
-			matlabPtr->feval(u"error", 0,
-				std::vector<Array>({ factory.createScalar("Input must be a volume") }));
-		}
-	}
-
-	void displayOnMATLAB(std::ostringstream& stream) {
-		// Pass stream content to MATLAB fprintf function
-		matlabPtr->feval(u"fprintf", 0,
-			std::vector<Array>({ factory.createScalar(stream.str()) }));
-		// Clear stream buffer
-		stream.str("");
 	}
 
 
-};
+	return;
+}
