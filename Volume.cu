@@ -5,7 +5,7 @@
 #define VOLUME
 #endif // !VOLUME
 #define _USE_MATH_DEFINES
-
+#define M_PI 3.14159265359
 #include "mex.h"
 #include "gpu/mxGPUArray.h"
 #include <string>
@@ -15,6 +15,9 @@
 #include <iostream>
 #include <fstream>
 #include <exception>
+
+#include "cuda_runtime.h"
+#include "device_launch_parameters.h"
 
 std::time_t timer;
 int timeout = 300;
@@ -504,6 +507,8 @@ Vector3 getGradient(const int& ix, const int& iy, const int& iz, const mxDouble 
 
 __global__
 void raycasting(double * const A) {
+	int const i = blockDim.x * blockIdx.x + threadIdx.x;
+
 	return;
 }
 
@@ -529,8 +534,19 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 	const mxDouble *colorArray = mxGetPr(mxGetField(prhs[2], 0, "colors"));
 
 	const mwSize alphaSize = mxGetNumberOfElements(mxGetField(prhs[2], 0, "alpha"));
-	if(numberOfObjects > 0)
-	std::cout << objectVolume[150] << std::endl;
+	mwSize visibleObjSize = 0;
+
+	options.setImageSize(viewArray[0], viewArray[1]);
+	options.setIntensity(intensityArray[0], intensityArray[1]);
+	options.threshold = (thresholdArray[0]);
+	options.fov = 52.51;
+	options.viewOffset = 200;
+	options.scale = std::tan(degToRad((options.fov * 0.5)));
+	options.imageAspectRatio = options.imageWidth / options.imageHeight;
+
+	mwSize frameDimensions[3] = { options.imageWidth,options.imageHeight,3 };
+	plhs[0] = mxCreateNumericArray(3, frameDimensions, mxDOUBLE_CLASS, mxREAL);
+	mxDouble* viewOutput = mxGetPr(plhs[0]);
 
 	std::cout << "SIZE " << sizeArray[0] << " " << sizeArray[1] << " " << sizeArray[2] << std::endl
 		<< "VOX " << numberOfVoxels << std::endl
@@ -540,8 +556,16 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 		<< "THR " << thresholdArray[0] << std::endl
 		<< "OBJS SIZE " << objectSizeArray[0] << " " << objectSizeArray[1] << " " << objectSizeArray[2] << std::endl;
 
+	mxInitGPU();
 
-	std::vector<mxDouble*> objectsVector;
+	mxGPUArray const * d_VolumeArray = mxGPUCreateFromMxArray(prhs[0]);
+	const mxDouble * const d_Volume = (mxDouble const* const) mxGPUGetDataReadOnly(d_VolumeArray);
+	
+	mxGPUArray const * d_plhs = mxGPUCreateFromMxArray(plhs[0]);
+	mxDouble * d_viewOutput = (mxDouble * )mxGPUGetDataReadOnly(d_plhs);
+
+	//vector can't be used in cuda
+	mxDouble** objectsVector = new mxDouble*[alphaSize];
 	if (numberOfObjects > 0) {
 		size_t objIndex = 0;
 		for (int j = 0; j < alphaSize; ++j) {
@@ -561,20 +585,14 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 						}
 					}
 				}
-				objectsVector.push_back(tmpVolume);
+				objectsVector[objIndex] = tmpVolume;
+				visibleObjSize++;
 				objIndex++;
 			}
 		}
 	}
 
 
-	options.setImageSize(viewArray[0], viewArray[1]);
-	options.setIntensity(intensityArray[0], intensityArray[1]);
-	options.threshold = (thresholdArray[0]);
-	options.fov = 52.51;
-	options.viewOffset = 200;
-	options.scale = std::tan(degToRad((options.fov * 0.5)));
-	options.imageAspectRatio = options.imageWidth / options.imageHeight;
 
 	Matrix4x4 rgbToYuv(0.2126, 0.7152, 0.0722, 0, -0.09991, -0.33609, 0.436, 0, 0.615, -0.55861, -0.05639, 0, 0, 0, 0, 0);
 	Matrix4x4 yuvToRgb(1, 0, 1.28033, 0, 1, -0.21482, -0.38059, 0, 1, 2.12798, 0, 0, 0, 0, 0, 0);
@@ -608,29 +626,31 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 
 	double tmin = 0, tmax = 0;
 
-	mwSize frameDimensions[3] = { options.imageWidth,options.imageHeight,3 };
-	plhs[0] = mxCreateNumericArray(3, frameDimensions, mxDOUBLE_CLASS, mxREAL);
-	mxDouble* viewOutput = mxGetPr(plhs[0]);
+	
+
 	for (int i = 0; i < options.imageWidth*options.imageHeight * 3; ++i) {
 		viewOutput[i] = 0;
 	}
 	size_t frameDimension = options.imageHeight * options.imageWidth;
-	std::vector<int> visibleObj;
-	std::vector<double> visibleAlpha;
-	std::vector<mxDouble*> frameBuffers;
+	
+	int * visibleObj = new int[visibleObjSize];
+	double * visibleAlpha = new double[visibleObjSize];
+	mxDouble ** frameBuffers = new mxDouble*[visibleObjSize];
+
 	if (numberOfObjects == 0) {
-		visibleAlpha.push_back(1);
-		visibleObj.push_back(-1);
-		frameBuffers.push_back(mxGetPr(mxCreateNumericArray(3, frameDimensions, mxDOUBLE_CLASS, mxREAL)));
-	}
+		visibleObjSize = 1;
+		visibleAlpha[0] = 1;
+		visibleObj[0] = -1;
+		frameBuffers[0] = mxGetPr(mxCreateNumericArray(3, frameDimensions, mxDOUBLE_CLASS, mxREAL));	}
 	else {
+		int visObj = 0;
 		for (size_t i = 0; i < alphaSize; ++i) {
 			if (alphaArray[i] > 0) {
 				std::cout << "Added " << i << " with alpha " << alphaArray[i] << std::endl;
-				visibleAlpha.push_back(alphaArray[i]);
-				visibleObj.push_back(i);
-				frameBuffers.push_back(mxGetPr(mxCreateNumericArray(3, frameDimensions, mxDOUBLE_CLASS, mxREAL)));
-
+				visibleAlpha[visObj] = alphaArray[i];
+				visibleObj[visObj] = i;
+				frameBuffers[visObj] = mxGetPr(mxCreateNumericArray(3, frameDimensions, mxDOUBLE_CLASS, mxREAL));
+				visObj++;
 			}
 		}
 	}
@@ -640,7 +660,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 
 	for (size_t h = 0; h < options.imageHeight; ++h) {
 		for (size_t w = 0; w < options.imageWidth; ++w) {
-			for (size_t iObj = 0; iObj < visibleObj.size(); ++iObj) {
+			for (size_t iObj = 0; iObj < visibleObjSize; ++iObj) {
 				frameBuffers[iObj][w + h * options.imageWidth]						= 0;
 				frameBuffers[iObj][w + h * options.imageWidth + frameDimension]		= 0;
 				frameBuffers[iObj][w + h * options.imageWidth + frameDimension * 2] = 0;
@@ -670,7 +690,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 						int ix = std::floor(start.x) > 0 ? std::floor(start.x) - 1 : 0;
 						int iy = std::floor(start.y) > 0 ? std::floor(start.y) - 1 : 0;
 						int iz = std::floor(start.z) > 0 ? std::floor(start.z) - 1 : 0;
-						//int linearIndex = iz + iy*sizeArray[2] +ix*sizeArray[2]*sizeArray[1]
 						int linearIndex = ix + iy * sizeArray[0] + iz * (sizeArray[0] * sizeArray[1]);
 						if (grid.isInsideGrid(ix, iy, iz)) {
 							if (volume[linearIndex] >= options.threshold && (visibleObj[iObj] == -1 || objectsVector[iObj][linearIndex] == 1)) { 
@@ -730,6 +749,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 		}
 	}
 
-
+	delete [] visibleObj;
+	delete [] visibleAlpha;
+	delete [] frameBuffers;
+	delete [] objectsVector;
 	return;
 }
