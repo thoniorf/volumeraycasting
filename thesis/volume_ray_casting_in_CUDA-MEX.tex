@@ -26,7 +26,7 @@ University of Calabria
 \subsubsection{Rendering pipeline}
 \subsection{The Illumination model}
 \subsubsection{Colours schemes}
-\subsection{Volume rendering types}
+\subsection{Volume rendering}
 There exists different ways to visualize and render a volumetric dataset such as x-Rays, tomography and such; they differ from each other in the way the volume is approached: directly or indirectly.
 Let's start with Indirect volume rendering, such type of volume visualization introduce a new layer of operation after reading the volume but before actually rendering. Indirect volume rendering imply generate an intermediate surface to be able to render the volume. There are different algorithms that falls under this, one of the most well know technique is marching cubes.
 On the other side, we do have Direct Volume rendering technique which visualize the volumetric data directly reading the voxels values and display them; Volume ray casting is the one example of direct volume technique that by piercing the volume with ray and sampling at constant steps voxels' value.
@@ -34,6 +34,19 @@ On the other side, we do have Direct Volume rendering technique which visualize 
 Marching cubes algorithm render the dataset, sending through the volume cubes with different configuration whom while traversing it, they depict the actual volume shape. This approach as its own advantages.
 However, one of the main disadvantages are: 
 \subsubsection{Direct volume rendering}
+As already said there exists different type of algorithms to directly render a volumetric dataset, without going through an intermediate layer like a mesh.
+The most known direct volume rendering algorithm is Volume Ray casting,a first version along with an implementation has been proposed by %TODO add proposed%.
+The volume ray casting core concept is very similar to the one used int the ray tracing technique beside that in ray tracing multiple types of ray are sent, known as primary rays, secondary rays and so on based on the ray source. Another, very clear difference is that ray tracing deals with triangles, quads and polygon in general; volume ray casting deals with volumetric dataset composed by voxels, instead.
+The objective of the volume ray casting technique is to transform a 3-Dimensional volumetric dataset in a 2-Dimensional screen plane.
+Volume ray casting technique can be decomposed in four different steps %TODO state wikipedia
+: cast , sample color and opacity, compute shadow, store the final result in a 2D view plane, that represent the final output image.
+The starting point of the algorithm is the observer view point, or the camera center point present in development environment such as OpenGL or similar; the same camera concept has been used inside this thesis work as can be seen in the next chapters.
+From the view point,one ray per each screen pixel is cast forward and through the volumetric data.
+In order to calculate the ray direction, an entry along with a exit point must be computed to determine the actual start and end of the volumetric data in the 3-Dimensional space with respect to the ray.
+The second phase involves the sampling of the voxels inside the volume, this operation is performed at a constant step along the ray. Color and opacity are sampled from the volumetric data in order to compute the final output view image. These values will be served to the next step to computer shadow.
+The shadow phase focuses in applying some illumination model of choice in order to better visualize the dataset. In order to achieve a fine looking there a different way of approximate the light integral with some global illumination algorithm like phong or blinn-phong algorithm.
+
+
 \subsection{Volume rendering state-of-the-art}
 \section{Visualization algorithm implementation}
 \subsection{Technologies}
