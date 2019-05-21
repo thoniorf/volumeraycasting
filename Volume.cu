@@ -5,14 +5,15 @@
 #define VOLUME
 #endif // !VOLUME
 #define _USE_MATH_DEFINES
-#define M_PI 3.14159265359
+//#define M_PI 3.14159265359
 #include "mex.h"
 #include "gpu/mxGPUArray.h"
 #include <string>
 #include <vector>
 #include <ctime>
-#include <cmath>
+#include <math.h>
 #include <iostream>
+#include <stdio.h>
 #include <fstream>
 #include <exception>
 
@@ -31,8 +32,10 @@ public:
 	double viewOffset = 1;
 	size_t imageWidth = 2;
 	size_t imageHeight = 2;
+	size_t imageDimension = 4;
 	double fov = 60;
 	double imageAspectRatio = 1;
+	double visibleObjectsSize = 0;
 
 	void setImageSize(double width, double height) {
 		imageWidth = std::floor(width);
@@ -45,12 +48,12 @@ public:
 	}
 
 };
-
+__host__ __device__
 inline
 double degToRad(const double& d) {
 	return d * M_PI / 180;
 }
-
+__host__ __device__
 inline
 double fixZeroDoublePrecisionError(const double& x) {
 	if (std::fabs(x) <= 5.00e-5)
@@ -61,33 +64,46 @@ double fixZeroDoublePrecisionError(const double& x) {
 class Vector3 {
 public:
 	double x, y, z;
+	__host__ __device__
 	Vector3() { x = y = z = 0; }
+	__host__ __device__
 	Vector3(double scalar) : x(scalar), y(scalar), z(scalar) {}
+	__host__ __device__
 	Vector3(double i, double j, double k) : x(fixZeroDoublePrecisionError(i)), y(fixZeroDoublePrecisionError(j)), z(fixZeroDoublePrecisionError(k)) {}
-
+	__host__ __device__
 	const double& operator [] (size_t i) const { return (&x)[i]; }
+	__host__ __device__
 	double& operator [] (size_t i) { return (&x)[i]; }
-
+	__host__ __device__
 	Vector3 operator - () { return Vector3(-x, -y, -z); }
+	__host__ __device__
 	Vector3 operator + (Vector3 v) { return Vector3(x + v.x, y + v.y, z + v.z); }
+	__host__ __device__
 	Vector3 operator - (Vector3 v) { return Vector3(x - v.x, y - v.y, z - v.z); }
+	__host__ __device__
 	Vector3 operator * (Vector3 v) { return Vector3(x * v.x, y * v.y, z * v.z); }
+	__host__ __device__
 	Vector3 operator * (double scalar) { return Vector3(x * scalar, y * scalar, z * scalar); }
+	__host__ __device__
 	Vector3 operator / (double scalar) { return Vector3(x / scalar, y / scalar, z / scalar); }
+	__host__ __device__
 	Vector3 operator = (Vector3 v) {
 		x = fixZeroDoublePrecisionError(v.x);
 		y = fixZeroDoublePrecisionError(v.y);
 		z = fixZeroDoublePrecisionError(v.z);
 		return Vector3(x, y, z);
 	}
-
+	__host__ __device__
 	bool operator != (Vector3 v) {
 		return (v.x != x || v.y != y || v.z != z);
 	}
+	__host__ __device__
 	inline
 		double norm() const { return x * x + y * y + z * z; }
+	__host__ __device__	
 	inline
 		double length() const { return sqrt(norm()); }
+	__host__ __device__
 	inline
 		Vector3 normalize() {
 		double n = norm();
@@ -98,10 +114,12 @@ public:
 		}
 		return Vector3(xx, yy, zz);
 	}
+	__host__ __device__
 	inline
 		double dot(const Vector3& v) {
 		return x * v.x + y * v.y + z * v.z;
 	}
+	__host__ __device__
 	inline
 		Vector3 cross(const Vector3& v) {
 		double cx, cy, cz;
@@ -110,11 +128,11 @@ public:
 		cz = x * v.y - y * v.x;
 		return Vector3(cx, cy, cz);
 	}
-
+	__host__ __device__
 	friend Vector3 operator / (double scalar, Vector3 vec) {
 		return Vector3(scalar / vec.x, scalar / vec.y, scalar / vec.z);
 	}
-
+	__host__ 
 	friend std::ostream& operator << (std::ostream &s, const Vector3 &v)
 	{
 		return s << "(" << v.x << " , " << v.y << " , " << v.z << ")";
@@ -135,7 +153,9 @@ class Matrix4x4 {
 private:
 	double x[4][4] = { {1,0,0,0},{0,1,0,0},{0,0,1,0},{0,0,0,1} };
 public:
+	__host__ __device__
 	Matrix4x4() {}
+	__host__ __device__
 	Matrix4x4(Vector3 translation) {
 		// translation component
 		x[0][3] = translation.x;
@@ -143,6 +163,7 @@ public:
 		x[2][3] = translation.z;
 
 	}
+	__host__ __device__
 	Matrix4x4(double c00, double c01, double c02, double c03, double c10, double c11, double c12, double c13, double c20, double c21, double c22, double c23, double c30, double c31, double c32, double c33) {
 		x[0][0] = c00;
 		x[0][1] = c01;
@@ -161,8 +182,11 @@ public:
 		x[3][2] = c32;
 		x[3][3] = c33;
 	}
+	__host__ __device__
 	const double* operator [] (uint8_t i) const { return x[i]; }
+	__host__ __device__
 	double* operator [] (uint8_t i) { return x[i]; }
+	__host__ __device__
 	inline
 		Matrix4x4 matrixMulti(const Matrix4x4& m) {
 		Matrix4x4 c;
@@ -173,6 +197,7 @@ public:
 		}
 		return c;
 	}
+	__host__ __device__
 	inline
 		Vector3 VecMatrixMulti(const Vector3& src) {
 		double a, b, c, w;
@@ -183,6 +208,7 @@ public:
 		w = src.x * x[0][3] + src.y * x[1][3] + src.z * x[2][3] + x[3][3];
 		return Vector3(a / w, b / w, c / w);
 	}
+	__host__ __device__
 	inline
 		Vector3 DirMatrixMulti(const Vector3& src) const
 	{
@@ -194,6 +220,7 @@ public:
 
 		return Vector3(a, b, c);
 	}
+	__host__ __device__
 	inline
 		Vector3 ColMajMatrixMulti(const Vector3& src) const
 	{
@@ -205,7 +232,7 @@ public:
 
 		return Vector3(a, b, c);
 	}
-
+	__host__
 	friend std::ostream& operator << (std::ostream &s, const Matrix4x4 &m)
 	{
 
@@ -244,6 +271,7 @@ protected:
 	Vector3 azzurro;
 	Vector3 default;
 public:
+	__host__
 	Color() {
 		arancione = Vector3(1, 0.65, 0);
 		rosso = Vector3(1, 0, 0);
@@ -254,6 +282,7 @@ public:
 		azzurro = Vector3(0.68, 0.85, 0.90);
 		default = Vector3(0.5, 0.5, 0.5);
 	}
+	__device__
 	Vector3 getColorByIndex(size_t index) {
 		switch (index)
 		{
@@ -271,6 +300,7 @@ public:
 };
 class YuvColor : public Color {
 public:
+	__host__
 	YuvColor() {
 		arancione = Vector3(1, -0.318368, 0.251903);
 		rosso = Vector3(1, -0.09991, 0.615);
@@ -287,17 +317,22 @@ public:
 class Grid {
 public:
 	Vector3 bounds[2] = { 0 };
+	__host__ __device__
 	Grid() {}
+	__host__ __device__
 	Grid(const Vector3 &min, const Vector3 &max) {
 		bounds[0] = min, bounds[1] = max;
 	}
+	__device__
 	bool isOutsideGrid(int ix, int iy, int iz) {
 		return ix < 0 || iy < 0 || iz < 0 || ix > bounds[1].x - 1 || iy > bounds[1].y - 1 || iz > bounds[1].z - 1;
 	}
+	__device__
 	inline
 		bool isInsideGrid(const int& i, const int& j, const int& k) {
 		return i > 0 && j > 0 && k > 0 && i < bounds[1].x - 1 && j < bounds[1].y - 1 && k < bounds[1].z - 1;
 	}
+	__host__
 	friend std::ostream& operator << (std::ostream &s, const Grid &g)
 	{
 
@@ -320,11 +355,13 @@ public:
 class Ray {
 public:
 	Vector3 orig, end, dir, length, invDir;
+	__device__
 	Ray(const Vector3 &startPoint, const Vector3 &endPoint) :orig(startPoint), end(endPoint) {
 		length = end - orig;
 		dir = length.normalize();
 		invDir = 1 / dir;
 	}
+	__device__
 	friend std::ostream& operator << (std::ostream &s, const Ray &v)
 	{
 
@@ -352,18 +389,22 @@ public:
 	Matrix4x4 worldTransformation;
 	Matrix4x4 rotationM;
 	double theta, phi, sigma;
+
 	Camera() {}
+
 	Camera(Vector3 center) {
 		this->center = center;
 		worldTransformation = Matrix4x4(center);
 
 	}
+
 	Camera(Vector3 from, Vector3 to) {
 		this->from = from;
 		this->to = to;
 		this->rotationM = Matrix4x4();
 		/*setupLookAtMatrix();*/
 	}
+
 	void yaw(const double& angle) { // z-axis
 		theta = degToRad(std::fmod(angle, 360));
 		Matrix4x4 rZ = Matrix4x4(std::cos(theta), -1 * std::sin(theta), 0, 0,
@@ -372,6 +413,7 @@ public:
 			0, 0, 0, 1);
 		rotationM = rotationM.matrixMulti(rZ);
 	}
+
 	void pitch(const double& angle) { //y-axis
 		phi = degToRad(std::fmod(angle, 360));
 		Matrix4x4 rY = Matrix4x4(std::cos(phi), 0, -1 * std::sin(phi), 0,
@@ -405,6 +447,7 @@ public:
 			from.x, from.y, from.z, 1);
 	}
 };
+__device__
 inline
 bool computeRayABBoxIntersection(const Ray& ray, double& tmin, double& tmax, const Grid& grid) {
 	double  tminy, tmaxy, tminz, tmaxz;
@@ -449,15 +492,16 @@ bool computeRayABBoxIntersection(const Ray& ray, double& tmin, double& tmax, con
 
 	return true;
 }
-
+__device__
 double interpolation(double x, Options option) {
 	if (x < option.threshold) return option.minIntensity;
 	return  (x - option.minIntensity) * ((255) / (option.maxIntensity - option.minIntensity));
 }
+__device__
 double interpolation01(double x, Options option) {
 	return  (x - option.minIntensity) * ((1) / (option.maxIntensity - option.minIntensity));
 }
-
+__device__
 Vector3 rasterToScreen(size_t w, size_t h, Options options) {
 	// from raster to normalized to normalized to screen to camera
 	double cameraX = (2 * (w + 0.5) / options.imageWidth - 1) * options.scale * options.imageAspectRatio;
@@ -465,7 +509,7 @@ Vector3 rasterToScreen(size_t w, size_t h, Options options) {
 
 	return Vector3(cameraX, cameraY, -1);
 }
-
+__device__
 Vector3 rasterToScreen(size_t w, size_t h, double z, Options options) {
 	// from raster to normalized to normalized to screen to camera
 	double cameraX = (2 * (w + 0.5) / options.imageWidth - 1) * options.imageAspectRatio;//*options.scale;
@@ -473,7 +517,7 @@ Vector3 rasterToScreen(size_t w, size_t h, double z, Options options) {
 
 	return Vector3(cameraX, cameraY, z);
 }
-
+__device__
 inline
 Vector3 getGradient(const int& ix, const int& iy, const int& iz, const mxDouble * volume, const mwSize* size) {
 	// component-wise linear interpolation
@@ -506,24 +550,115 @@ Vector3 getGradient(const int& ix, const int& iy, const int& iz, const mxDouble 
 }
 
 __global__
-void raycasting(double * const A) {
+void raycasting(mxDouble * viewOutput, mxDouble const * const volume, mxDouble const * const objectVolume,
+				mwSize const * const size, int const * const visibleObj,double const *const visibleAlpha,
+				Options options, Matrix4x4 lookAt, Vector3 from, 
+				Vector3 lightPosition, Vector3 ambientColor,Vector3 specularColor, double shininess, double specularity,
+				Color colors, YuvColor yuvColors, Matrix4x4 rgbToYuv, Matrix4x4 yuvToRgb,
+				Grid grid, size_t maxStep) {
+	Vector3 diffuseColor(0.5, 0.5, 0.5);
+	double littleStep = 1;
+	double tmin, tmax;
 	int const i = blockDim.x * blockIdx.x + threadIdx.x;
+	if (i < options.imageDimension) {
+		int x = (i % options.imageWidth)-options.imageWidth/2;
+		int y = (i / options.imageWidth)-options.imageHeight/2;
+		for (size_t iObj = 0; iObj < options.visibleObjectsSize; ++iObj) {
 
+			Vector3 rayStart = lookAt.VecMatrixMulti(Vector3(x, y, 0));
+			Vector3 rayEnd = lookAt.VecMatrixMulti(Vector3(x, y, 1));
+
+			Ray ray(rayStart, rayEnd);
+
+			if (computeRayABBoxIntersection(ray, tmin, tmax, grid)) {
+
+				Vector3 start = ray.orig + ray.dir *tmin;
+				Vector3 end = ray.orig + ray.dir *tmax;
+
+				for (size_t t = 0; t < maxStep; t += littleStep) {
+					int ix = floor(start.x) > 0 ? floor(start.x) - 1 : 0;
+					int iy = floor(start.y) > 0 ? floor(start.y) - 1 : 0;
+					int iz = floor(start.z) > 0 ? floor(start.z) - 1 : 0;
+					int linearIndex = ix + iy * size[0] + iz * (size[0] * size[1]);
+					if (grid.isInsideGrid(ix, iy, iz)) {
+						if (volume[linearIndex] >= options.threshold && (visibleObj[iObj] == -1|| objectVolume[linearIndex] == visibleObj[iObj])) {
+
+							Vector3 grad = getGradient(ix, iy, iz, volume,size);
+							Vector3 normal = -grad / std::sqrt(grad.norm());
+
+							Vector3 lightDir = from.normalize();
+							double distance = lightPosition.length();
+							double lambertian = lightDir.dot(normal);
+
+							Vector3 viewDir = rayStart.normalize();
+							Vector3 halfDir = (lightDir + viewDir).normalize();
+
+							double specAngle = halfDir.dot(normal);
+							double specular = std::pow(specAngle, shininess);
+
+							diffuseColor = colors.getColorByIndex(visibleObj[iObj]);
+
+							// 1* lightAmbientColor  +  1* lightDiffuseColor*dot(lightdir,normals) * weight  +  1* lightSpecularColor * [dot(halfdir,normals)]^shininess * (1-weight)
+							Vector3 IlluminationI = ambientColor + diffuseColor * lambertian * specularity + specularColor * specular * (1 - specularity);
+							//convert to yuv
+							Vector3 yuvIllumination = rgbToYuv.ColMajMatrixMulti(IlluminationI);
+							//get diffuse color in yuv color schema
+							Vector3 yuvDiffuse = yuvColors.getColorByIndex(visibleObj[iObj]);
+							//reset color
+							yuvIllumination.y = yuvDiffuse.y;
+							yuvIllumination.z = yuvDiffuse.z;
+							//convert back to rgb
+							IlluminationI = yuvToRgb.ColMajMatrixMulti(yuvIllumination);
+
+							// clamp new illumination to valid rgb value.ie: x<0-> x=0, x>1 -> x=1
+							viewOutput[i] += visibleAlpha[iObj] * IlluminationI.x;
+							viewOutput[i + options.imageDimension] += visibleAlpha[iObj] * IlluminationI.y;
+							viewOutput[i + options.imageDimension * 2] += visibleAlpha[iObj] * IlluminationI.z;
+
+							/*viewOutput[i] = 0.7;
+							viewOutput[i + options.imageDimension] = 0.5;
+							viewOutput[i + options.imageDimension * 2] = 0.3;*/
+							break;
+						}
+					}
+					start = start + ray.dir*littleStep;
+
+				}
+
+			}
+		}
+	}
+	return;
+}
+__global__ void test_kernel(int const *const a, int * const b, const int n) {
+	int const i = blockDim.x * blockIdx.x + threadIdx.x;
+	if (i < n) {
+		b[i] =a[i];
+	}
 	return;
 }
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 	std::time(&timer);
 	Options options;
+	/*
+	* GPU INIT
+	* CREATING OR REFERINCING VARIABLE IN DEVICE MEMORY
+	*/
+	mxInitGPU();
 
-	const mxDouble *volume = mxGetPr(prhs[0]);
+	mxGPUArray const * d_VolumeArray = mxGPUCreateFromMxArray(prhs[0]);
+	const mxDouble *  d_Volume = (mxDouble const*)mxGPUGetDataReadOnly(d_VolumeArray);
 	const mwSize *sizeArray = mxGetDimensions(prhs[0]);
 	const mwSize numberOfVoxels = mxGetNumberOfElements(prhs[0]);
+	mwSize * d_Size;
+	cudaMalloc((void**)&d_Size, 3 * sizeof(mwSize));
+	cudaMemcpy(d_Size, sizeArray, 3 * sizeof(mwSize), cudaMemcpyHostToDevice);
 
-	const mxArray *objectsVolumeArray = prhs[1];
-	const mxDouble* objectVolume = mxGetPr(objectsVolumeArray);
+	mxGPUArray const * d_ObjectsArray = mxGPUCreateFromMxArray(prhs[1]);
+	const mxDouble *  d_ObjectVolume = (mxDouble const*)mxGPUGetDataReadOnly(d_ObjectsArray);
 	const mwSize *objectSizeArray = mxGetDimensions(prhs[0]);
-	const mwSize numberOfObjects = mxGetNumberOfElements(objectsVolumeArray);
+	const mwSize numberOfObjects = mxGetNumberOfElements(prhs[1]);
 
 	const mxDouble *thresholdArray = mxGetPr(mxGetField(prhs[2], 0, "threshold"));
 	const mxDouble *viewArray = mxGetPr(mxGetField(prhs[2], 0, "view"));
@@ -537,6 +672,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 	mwSize visibleObjSize = 0;
 
 	options.setImageSize(viewArray[0], viewArray[1]);
+	options.imageDimension = options.imageHeight * options.imageWidth;
 	options.setIntensity(intensityArray[0], intensityArray[1]);
 	options.threshold = (thresholdArray[0]);
 	options.fov = 52.51;
@@ -545,8 +681,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 	options.imageAspectRatio = options.imageWidth / options.imageHeight;
 
 	mwSize frameDimensions[3] = { options.imageWidth,options.imageHeight,3 };
-	plhs[0] = mxCreateNumericArray(3, frameDimensions, mxDOUBLE_CLASS, mxREAL);
-	mxDouble* viewOutput = mxGetPr(plhs[0]);
+
+	mxGPUArray * const  d_viewArray = mxGPUCreateGPUArray(3, frameDimensions, mxDOUBLE_CLASS, mxREAL, MX_GPU_INITIALIZE_VALUES);
+	mxDouble * d_viewOutput = (mxDouble *)mxGPUGetData(d_viewArray);
 
 	std::cout << "SIZE " << sizeArray[0] << " " << sizeArray[1] << " " << sizeArray[2] << std::endl
 		<< "VOX " << numberOfVoxels << std::endl
@@ -556,43 +693,35 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 		<< "THR " << thresholdArray[0] << std::endl
 		<< "OBJS SIZE " << objectSizeArray[0] << " " << objectSizeArray[1] << " " << objectSizeArray[2] << std::endl;
 
-	mxInitGPU();
 
-	mxGPUArray const * d_VolumeArray = mxGPUCreateFromMxArray(prhs[0]);
-	const mxDouble * const d_Volume = (mxDouble const* const) mxGPUGetDataReadOnly(d_VolumeArray);
-	
-	mxGPUArray const * d_plhs = mxGPUCreateFromMxArray(plhs[0]);
-	mxDouble * d_viewOutput = (mxDouble * )mxGPUGetDataReadOnly(d_plhs);
-
-	//vector can't be used in cuda
-	mxDouble** objectsVector = new mxDouble*[alphaSize];
 	if (numberOfObjects > 0) {
-		size_t objIndex = 0;
 		for (int j = 0; j < alphaSize; ++j) {
 			if (alphaArray[j] > 0.0) {
-
-				mxDouble * tmpVolume = mxGetPr(mxCreateNumericArray(3, sizeArray, mxDOUBLE_CLASS, mxREAL));			
-					
-				for (int x = 0; x < sizeArray[0]; ++x) {
-					for (int y = 0; y < sizeArray[1];++y) {
-						for (int z = 0; z < sizeArray[2];++z) {
-							int linearIndex = x + y * sizeArray[0] + z * (sizeArray[0] * sizeArray[1]);
-							double v = objectVolume[linearIndex];
-							if(v == j)
-								tmpVolume[linearIndex] = 1;
-							else
-								tmpVolume[linearIndex] = 0;
-						}
-					}
-				}
-				objectsVector[objIndex] = tmpVolume;
-				visibleObjSize++;
-				objIndex++;
+				options.visibleObjectsSize++;
 			}
 		}
 	}
+	else {
+		options.visibleObjectsSize = 1;
+	}
+	
+	int * visibleObj = new int[options.visibleObjectsSize];
+	double * visibleAlpha = new double[options.visibleObjectsSize];
 
-
+	if (numberOfObjects == 0) {
+		visibleAlpha[0] = 1;
+		visibleObj[0] = -1;
+	}
+	else {
+		int visObj = 0;
+		for (size_t i = 0; i < alphaSize; ++i) {
+			if (alphaArray[i] > 0) {
+				visibleAlpha[visObj] = alphaArray[i];
+				visibleObj[visObj] = i;
+				visObj++;
+			}
+		}
+	}
 
 	Matrix4x4 rgbToYuv(0.2126, 0.7152, 0.0722, 0, -0.09991, -0.33609, 0.436, 0, 0.615, -0.55861, -0.05639, 0, 0, 0, 0, 0);
 	Matrix4x4 yuvToRgb(1, 0, 1.28033, 0, 1, -0.21482, -0.38059, 0, 1, 2.12798, 0, 0, 0, 0, 0, 0);
@@ -616,7 +745,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 	camera.setupLookAtMatrix();
 
 	double littleStep = 1;
-	double maxStep = std::sqrt(sizeArray[0] * sizeArray[0] + sizeArray[1] * sizeArray[1] + sizeArray[2] * sizeArray[2]);
+	size_t maxStep = std::sqrt(sizeArray[0] * sizeArray[0] + sizeArray[1] * sizeArray[1] + sizeArray[2] * sizeArray[2]);
 
 	double halfWidth = std::fabs(options.imageWidth / 2);
 	double halfHeight = std::fabs(options.imageHeight / 2);
@@ -624,134 +753,42 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 	Color colors;
 	YuvColor yuvColors;
 
-	double tmin = 0, tmax = 0;
+	double tmin = 0, tmax = 0;	
 
-	
+	cudaError_t err = cudaSuccess;
+	int* d_visibleObj;
+	cudaMalloc((void**)&d_visibleObj, options.visibleObjectsSize * sizeof(int));
+	err = cudaMemcpy(d_visibleObj, visibleObj, options.visibleObjectsSize * sizeof(int), cudaMemcpyHostToDevice);
+	double* d_visibleAlpha;
+	cudaMalloc((void**)&d_visibleAlpha, options.visibleObjectsSize * sizeof(double));
+	err = cudaMemcpy(d_visibleAlpha, visibleAlpha, options.visibleObjectsSize * sizeof(double), cudaMemcpyHostToDevice);
 
-	for (int i = 0; i < options.imageWidth*options.imageHeight * 3; ++i) {
-		viewOutput[i] = 0;
-	}
-	size_t frameDimension = options.imageHeight * options.imageWidth;
-	
-	int * visibleObj = new int[visibleObjSize];
-	double * visibleAlpha = new double[visibleObjSize];
-	mxDouble ** frameBuffers = new mxDouble*[visibleObjSize];
+	// test
+	int * d_b;
+	cudaMalloc((void**)&d_b, options.visibleObjectsSize * sizeof(int));
+	test_kernel<<<1, 2 >>>(d_visibleObj, d_b, visibleObjSize);
+	int *b = new int[options.visibleObjectsSize];
+	cudaMemcpy(b, d_b, options.visibleObjectsSize * sizeof(int), cudaMemcpyDeviceToHost);
+	std::cout<<"test:" <<b[0]<<std::endl;
+	cudaFree(d_b);
+	delete [] b;
 
-	if (numberOfObjects == 0) {
-		visibleObjSize = 1;
-		visibleAlpha[0] = 1;
-		visibleObj[0] = -1;
-		frameBuffers[0] = mxGetPr(mxCreateNumericArray(3, frameDimensions, mxDOUBLE_CLASS, mxREAL));	}
-	else {
-		int visObj = 0;
-		for (size_t i = 0; i < alphaSize; ++i) {
-			if (alphaArray[i] > 0) {
-				std::cout << "Added " << i << " with alpha " << alphaArray[i] << std::endl;
-				visibleAlpha[visObj] = alphaArray[i];
-				visibleObj[visObj] = i;
-				frameBuffers[visObj] = mxGetPr(mxCreateNumericArray(3, frameDimensions, mxDOUBLE_CLASS, mxREAL));
-				visObj++;
-			}
-		}
-	}
+	//call kernel
+	raycasting<<<std::ceil(options.imageDimension / 256.0), 256 >>>(d_viewOutput, d_Volume, d_ObjectVolume, d_Size, d_visibleObj,d_visibleAlpha,
+																	options, camera.lookAt, camera.from,
+																	lightPosition,ambientColor,specularColor,shininess,specularity,
+																	colors,yuvColors,rgbToYuv,yuvToRgb,
+																	grid, maxStep);
 
-	
-
-
-	for (size_t h = 0; h < options.imageHeight; ++h) {
-		for (size_t w = 0; w < options.imageWidth; ++w) {
-			for (size_t iObj = 0; iObj < visibleObjSize; ++iObj) {
-				frameBuffers[iObj][w + h * options.imageWidth]						= 0;
-				frameBuffers[iObj][w + h * options.imageWidth + frameDimension]		= 0;
-				frameBuffers[iObj][w + h * options.imageWidth + frameDimension * 2] = 0;
-
-				double x = w - halfWidth;
-				double y = h - halfHeight;
-
-				Vector3 rayStart = camera.lookAt.VecMatrixMulti(Vector3(x, y, 0));
-				Vector3 rayEnd = camera.lookAt.VecMatrixMulti(Vector3(x, y, 1));
-
-				Ray ray(rayStart, rayEnd);
-
-				if (computeRayABBoxIntersection(ray, tmin, tmax, grid)) {
-
-					Vector3 start = ray.orig + ray.dir *tmin;
-					Vector3 end = ray.orig + ray.dir *tmax;
-
-					for (size_t t = 0; t < maxStep; t += littleStep) {
-
-#if DEBUG
-						if (time(NULL) - timer >= timeout)
-						{
-							std::cout << "TIMEOUT" << std::endl;
-							break;
-						}
-#endif DEBUG
-						int ix = std::floor(start.x) > 0 ? std::floor(start.x) - 1 : 0;
-						int iy = std::floor(start.y) > 0 ? std::floor(start.y) - 1 : 0;
-						int iz = std::floor(start.z) > 0 ? std::floor(start.z) - 1 : 0;
-						int linearIndex = ix + iy * sizeArray[0] + iz * (sizeArray[0] * sizeArray[1]);
-						if (grid.isInsideGrid(ix, iy, iz)) {
-							if (volume[linearIndex] >= options.threshold && (visibleObj[iObj] == -1 || objectsVector[iObj][linearIndex] == 1)) { 
-
-								try {
-									Vector3 grad = getGradient(ix, iy, iz, volume,sizeArray);
-									Vector3 normal = -grad / std::sqrt(grad.norm());
-
-									Vector3 lightDir = camera.from.normalize();
-									double distance = lightPosition.length();
-									double lambertian = lightDir.dot(normal);
-
-									Vector3 viewDir = rayStart.normalize();
-									Vector3 halfDir = (lightDir + viewDir).normalize();
-
-									double specAngle = halfDir.dot(normal);
-									double specular = std::pow(specAngle, shininess);
-
-									diffuseColor = colors.getColorByIndex(visibleObj[iObj]);
-
-									// 1* lightAmbientColor  +  1* lightDiffuseColor*dot(lightdir,normals) * weight  +  1* lightSpecularColor * [dot(halfdir,normals)]^shininess * (1-weight)
-									Vector3 IlluminationI = ambientColor + diffuseColor * lambertian * specularity + specularColor * specular * (1 - specularity);
-									//convert to yuv
-									Vector3 yuvIllumination = rgbToYuv.ColMajMatrixMulti(IlluminationI);
-									//get diffuse color in yuv color schema
-									Vector3 yuvDiffuse = yuvColors.getColorByIndex(visibleObj[iObj]);
-									//reset color
-									yuvIllumination.y = yuvDiffuse.y;
-									yuvIllumination.z = yuvDiffuse.z;
-									//convert back to rgb
-									IlluminationI = yuvToRgb.ColMajMatrixMulti(yuvIllumination);
-
-									// clamp new illumination to valid rgb value.ie: x<0-> x=0, x>1 -> x=1
-
-									frameBuffers[iObj][w + h * options.imageWidth] = IlluminationI.x;
-									frameBuffers[iObj][w + h * options.imageWidth + frameDimension] = IlluminationI.y;
-									frameBuffers[iObj][w + h * options.imageWidth + frameDimension * 2] = IlluminationI.z;
-									break;
-
-								}
-								catch (std::exception& e) {
-									std::cout << e.what() << std::endl;
-									std::cout << start << std::endl;
-									std::cout << std::floor(start.x) << " " << std::floor(start.y) << " " << std::floor(start.z) << std::endl;
-									std::cout << ix << " " << iy << " " << iz << std::endl;
-									return;
-								}
-							}
-						}
-						start = start + ray.dir*littleStep;
-					}
-				}
-				viewOutput[w + h * options.imageWidth] += visibleAlpha[iObj] * frameBuffers[iObj][w + h * options.imageWidth];
-				viewOutput[w + h * options.imageWidth + frameDimension] += visibleAlpha[iObj] * frameBuffers[iObj][w + h * options.imageWidth + frameDimension];
-				viewOutput[w + h * options.imageWidth + frameDimension * 2] += visibleAlpha[iObj] *  frameBuffers[iObj][w + h * options.imageWidth + frameDimension * 2];
-			}
-		}
-	}
-
+	// uncomment to show GPU work
+	plhs[0] = mxGPUCreateMxArrayOnGPU(d_viewArray);
 	delete [] visibleObj;
 	delete [] visibleAlpha;
-	delete [] frameBuffers;
-	delete [] objectsVector;
+	cudaFree(d_visibleAlpha);
+	cudaFree(d_visibleObj);
+	cudaFree(d_Size);
+	mxGPUDestroyGPUArray(d_viewArray);
+	mxGPUDestroyGPUArray(d_ObjectsArray);
+	mxGPUDestroyGPUArray(d_VolumeArray);
 	return;
 }
