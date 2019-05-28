@@ -19,44 +19,88 @@ University of Calabria
 \pagebreak
 \tableofcontents
 \pagebreak
-\section{Introduction}
+\section{Introduction} %TODO 
 
 \section{Basics of Computer graphics and visualization}
-\subsection{Computer graphics concepts}
-\subsubsection{Rendering pipeline}
-\subsection{The Illumination model}
-\subsubsection{Colours schemes}
-\subsection{Volume rendering}
+\subsection{Computer graphics concepts} %TODO 31
+\subsubsection{Rendering pipeline} %TODO 30-31
+\subsection{The Illumination model} %TODO 30
+\subsubsection{Colours schemes} %TODO 29
+\pagebreak
+\subsection{Volume rendering} 
+This chapter makes a short introduction to different type of techniques and approaches to render a a 3-dimensional data, also known as volume and some fundamental concepts. Then, few sections will be reserved to a more in-depth explanation of some of the most common techniques along with advantages and disadvantages, in order to understand the reasons behind some decision that has been taken for this work.
+In the last section of this chapter, there will be a description of the current state-of-the-art volume rendering techniques used nowadays.\\
+
+Volume rendering is a subject of computer graphics that involves volumetric datasets as source. Fundamental concept in volume rendering is the voxel. 
+A voxel act as the basic unit for volumes, as pixels for 2-dimensional images.
+It represent a single value on a regular grid in 3-dimensional space (volume), and they can represent different values such as MRI and ultrasound samples or values stored in CT scans. Voxels position in space is not explicitly encoded in the voxel itself, instead it is inferred with respect to the other voxels in the grid forming the whole volume which position is define in space. In contrast with points and polygons that also encode their positions.\\ %TODO reference wiki or somenthing else 
+
 There exists different ways to visualize and render a volumetric dataset such as x-Rays, tomography and such; they differ from each other in the way the volume is approached: directly or indirectly.
-Let's start with Indirect volume rendering, such type of volume visualization introduce a new layer of operation after reading the volume but before actually rendering. Indirect volume rendering imply generate an intermediate surface to be able to render the volume. There are different algorithms that falls under this, one of the most well know technique is marching cubes.
-On the other side, we do have Direct Volume rendering technique which visualize the volumetric data directly reading the voxels values and display them; Volume ray casting is the one example of direct volume technique that by piercing the volume with ray and sampling at constant steps voxels' value.
-\subsubsection{Surface rendering}
-Marching cubes algorithm render the dataset, sending through the volume cubes with different configuration whom while traversing it, they depict the actual volume shape. This approach as its own advantages.
-However, one of the main disadvantages are: 
-\subsubsection{Direct volume rendering}
+Indirect Volume rendering techniques, as the name implies, before the actual render of the volumetric dataset, they introduces an intermediate stage in which the source data in transformed, and then it is rendered by means of common techniques, such as rasterization et al; for this reason, such techniques are also known as surface rendering techniques.
+The main idea of those technique is to go through the volumes' voxels and determines if they belongs to a certain isosurface with a specified values. Therefore, they rely on differentiable functions.\\
+Common techniques that belongs to the indirect volume rendering category whom reconstruct surfaces from volumetric data are: \begin{itemize}
+\item Contour tracing
+\item Marching cubes
+\item Marching tetrahedra
+\end{itemize}
+
+Nowadays, the last twos are known to be the most used indirect volume rendering techniques.
+They are often chosen due to their computational speed %TODO cita VIS-MODULE-05-Volume_visualization
+and less storage space requirements, over plain implementations of the other techniques. However, they suffer of a main disadvantage that can't be completely ignored in the context of medical imaging as aid in diseases diagnosis or even in surgery rehearsal, whom are the main context of this work, that is the lack of and high level accuracy and precision; it doesn't means they are not valid at all, but by means of other approaches initially slower better results can be archived with respect to the patient condition stored in the source dataset.\\  
+
+On the other side, we do have Direct Volume rendering technique which visualize the volumetric data, directly reading the sampled values stored into voxels and display them, without producing any intermediate surface, unlike indirect approaches do. These techniques can be furthermore distinguished in image-based and object-based. Image-based techniques starts from the 2-dimensional view space and their computation is performed pixel by pixel.In contrast, object-based techniques' approach start from the objects stored into the volume. There exists different, and very common, direct volume rendering techniques :
+\begin{itemize}
+\item Image-based approach:
+\begin{itemize}
+\item Ray casting
+\end{itemize}
+\item Object-based approach:
+\begin{itemize}
+\item Shear-Warp
+\item Splatting
+\item Texture-based
+\end{itemize}
+\end{itemize}
+
+One of the main disadvantage of these techniques is that, their computational speed is pretty low compared to the indirect volume rendering competitors. However, Ray casting especially, is able to often output better results in terms of source fidelity, and also because ray casting and the others direct volume rendering technique allows to visualize both the interiors and the exterior of the volume unlike the others approaches.
+
+\subsubsection{Surface rendering} %TODO 24
+This section will focus on the fundamental concepts of the common techniques that belongs to indirect volume rendering category. First a brief explanation of the Contour tracing algorithm, mentioned in the previous section, used during the early days of volume rendering in medical contexts. Then the core idea of Marching cube technique be described, as it is one of the main competitor in his category used in current state-of-the-art indirect volume rendering techniques, nowadays.\\
+
+Marching cubes algorithm render the dataset, sending through the volume cubes with different configuration whom while traversing it, they depict the actual volume shape. Indeed, the output served by Marching cubes algorithm is a polygonal mesh of an isosurface computed from a 3-Dimensional discrete scalar dataset. It was first proposed and developed by E.Lorensen and H. E. Cline.\\ The input volume is subdivided in a grid of cubes, then values that falls beyond the isosurface threshold are interpolated with respect to vertices of the grid of cubes and a pre-computed array of vertices configurations. Those configurations are $256$ as $2^8 = 256$ and their purpose is to check for every cube of the grid, the correct configuration interpolating the grid vertex that falls into the isosurface. In this way, each time a configuration matches the corresponding interpolated vertex defined by the configuration are used to represent the surface.\\
+
+The proposed algorithm from Cline and Lorensen exploiting rotational and reflective symmetry along with changes in sign of the cubical configurations, the number of total configuration is narrowed down to 16 only. However, one of the main disadvantages is that it presented some discontinuities and topological issues, due to some ambiguities in the trilinear interpolation of the cubes that occurs in scenarios where there aren't sufficient vertex to determine the correct surface triangulation. %TODO cite original and wikipedia
+
+\subsubsection{Direct volume rendering} %TODO 25-26
+This section will describe, as it has been done in the previous section for indirect volume rendering techniques, direct volume rendering techniques. Briefly going from object-based direct techniques previously mentioned, such as Shear-Warp, Splatting and Texture-based, to image-based approach volume ray casting technique, with a deep explanation of the main concepts, its first proposed version and the currently state-of-the-art versions, used to solve today medical imaging problems.\\
+
 As already said there exists different type of algorithms to directly render a volumetric dataset, without going through an intermediate layer like a mesh.
 The most known direct volume rendering algorithm is Volume Ray casting,a first version along with an implementation has been proposed by %TODO add proposed%.
 The volume ray casting core concept is very similar to the one used int the ray tracing technique beside that in ray tracing multiple types of ray are sent, known as primary rays, secondary rays and so on based on the ray source. Another, very clear difference is that ray tracing deals with triangles, quads and polygon in general; volume ray casting deals with volumetric dataset composed by voxels, instead.
-The objective of the volume ray casting technique is to transform a 3-Dimensional volumetric dataset in a 2-Dimensional screen plane.
+The objective of the volume ray casting technique is to transform a 3-Dimensional volumetric dataset in a 2-Dimensional screen plane.\\
+
 Volume ray casting technique can be decomposed in four different steps %TODO state wikipedia
 : cast , sample color and opacity, compute shadow, store the final result in a 2D view plane, that represent the final output image.
-The starting point of the algorithm is the observer view point, or the camera center point present in development environment such as OpenGL or similar; the same camera concept has been used inside this thesis work as can be seen in the next chapters.
+The starting point of the algorithm is the observer view point, or the camera center point present in development environment such as OpenGL or similar; the same camera concept has been used inside this thesis work as can be seen in the next chapters.\\
+
 From the view point,one ray per each screen pixel is cast forward and through the volumetric data.
-In order to calculate the ray direction, an entry along with a exit point must be computed to determine the actual start and end of the volumetric data in the 3-Dimensional space with respect to the ray.
-The second phase involves the sampling of the voxels inside the volume, this operation is performed at a constant step along the ray. Color and opacity are sampled from the volumetric data in order to compute the final output view image. These values will be served to the next step to computer shadow.
+In order to calculate the ray direction, an entry along with a exit point must be computed to determine the actual start and end of the volumetric data in the 3-Dimensional space with respect to the ray.\\
+
+The second phase involves the sampling of the voxels inside the volume, this operation is performed at a constant step along the ray. Color and opacity are sampled from the volumetric data in order to compute the final output view image. These values will be served to the next step to computer shadow.\\
+
 The shadow phase focuses in applying some illumination model of choice in order to better visualize the dataset. In order to achieve a fine looking there a different way of approximate the light integral with some global illumination algorithm like phong or blinn-phong algorithm.
 
 
-\subsection{Volume rendering state-of-the-art}
-\section{Visualization algorithm implementation}
-\subsection{Technologies}
-\subsection{Architecture}
-\subsection{Basic volume ray casting}
-\subsection{Parallelize with CUDA}
-\section{Conclusions}
-\subsection{Rendering results}
-\subsection{Results comparisons}
-\subsection{Final considerations}
-\subsection{Discussion}
+\subsection{Volume rendering state-of-the-art} %TODO 26-28
+\section{Visualization algorithm implementation} 
+\subsection{Technologies} %TODO 1
+\subsection{Architecture} %TODO 2
+\subsection{Basic volume ray casting} %TODO 2-4
+\subsection{Parallelize with CUDA} %TODO 5-6
+\section{Conclusions} 
+\subsection{Rendering results} %TODO 7
+\subsection{Results comparisons} %TODO 8
+\subsection{Final considerations} %TODO 9
+\subsection{Discussion} %TODO 9-10
 \section{Bibliography}
 \end{document}
