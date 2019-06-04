@@ -28,17 +28,17 @@ University of Calabria
 \subsubsection{Colours schemes} %TODO 29
 \pagebreak
 \subsection{Volume rendering} 
-This chapter makes a short introduction to different type of techniques and approaches to render a a 3-dimensional data, also known as volume and some fundamental concepts. Then, few sections will be reserved to a more in-depth explanation of some of the most common techniques along with advantages and disadvantages, in order to understand the reasons behind some decision that has been taken for this work.
-In the last section of this chapter, there will be a description of the current state-of-the-art volume rendering techniques used nowadays.\\
+This chapter makes a short introduction to different type of techniques and approaches to render a a 3-dimensional data, also known as volume and some fundamental concepts. Then, few sections will be reserved to a more in-depth explanation of some of the most common techniques along with advantages and disadvantages, in order to understand the reasons behind some decision that has been taken for this work. In the last section of this chapter, there will be a description of the current state-of-the-art volume rendering techniques used nowadays.
 
 Volume rendering is a subject of computer graphics that involves volumetric datasets as source. Fundamental concept in volume rendering is the voxel. 
 A voxel act as the basic unit for volumes, as pixels for 2-dimensional images.
-It represent a single value on a regular grid in 3-dimensional space (volume), and they can represent different values such as MRI and ultrasound samples or values stored in CT scans. Voxels position in space is not explicitly encoded in the voxel itself, instead it is inferred with respect to the other voxels in the grid forming the whole volume which position is define in space. In contrast with points and polygons that also encode their positions.\\ %TODO reference wiki or somenthing else 
+It represent a single value on a regular grid in 3-dimensional space (volume), and they can represent different values such as MRI and ultrasound samples or values stored in CT scans. Voxels position in space is not explicitly encoded in the voxel itself, instead it is inferred with respect to the other voxels in the grid forming the whole volume which position is define in space. In contrast with points and polygons that also encode their positions. %TODO reference wiki or somenthing else 
 
 There exists different ways to visualize and render a volumetric dataset such as x-Rays, tomography and such; they differ from each other in the way the volume is approached: directly or indirectly.
 Indirect Volume rendering techniques, as the name implies, before the actual render of the volumetric dataset, they introduces an intermediate stage in which the source data in transformed, and then it is rendered by means of common techniques, such as rasterization et al; for this reason, such techniques are also known as surface rendering techniques.
 The main idea of those technique is to go through the volumes' voxels and determines if they belongs to a certain isosurface with a specified values. Therefore, they rely on differentiable functions.\\
-Common techniques that belongs to the indirect volume rendering category whom reconstruct surfaces from volumetric data are: \begin{itemize}
+Common techniques that belongs to the indirect volume rendering category whom reconstruct surfaces from volumetric data are:
+\begin{itemize}
 \item Contour tracing
 \item Marching cubes
 \item Marching tetrahedra
@@ -46,7 +46,7 @@ Common techniques that belongs to the indirect volume rendering category whom re
 
 Nowadays, the last twos are known to be the most used indirect volume rendering techniques.
 They are often chosen due to their computational speed %TODO cita VIS-MODULE-05-Volume_visualization
-and less storage space requirements, over plain implementations of the other techniques. However, they suffer of a main disadvantage that can't be completely ignored in the context of medical imaging as aid in diseases diagnosis or even in surgery rehearsal, whom are the main context of this work, that is the lack of and high level accuracy and precision; it doesn't means they are not valid at all, but by means of other approaches initially slower better results can be archived with respect to the patient condition stored in the source dataset.\\  
+and less storage space requirements, over plain implementations of the other techniques. However, they suffer of a main disadvantage that can't be completely ignored in the context of medical imaging as aid in diseases diagnosis or even in surgery rehearsal, whom are the main context of this work, that is the lack of and high level accuracy and precision; it doesn't means they are not valid at all, but by means of other approaches initially slower better results can be archived with respect to the patient condition stored in the source dataset.  
 
 On the other side, we do have Direct Volume rendering technique which visualize the volumetric data, directly reading the sampled values stored into voxels and display them, without producing any intermediate surface, unlike indirect approaches do. These techniques can be furthermore distinguished in image-based and object-based. Image-based techniques starts from the 2-dimensional view space and their computation is performed pixel by pixel.In contrast, object-based techniques' approach start from the objects stored into the volume. There exists different, and very common, direct volume rendering techniques :
 \begin{itemize}
@@ -65,30 +65,186 @@ On the other side, we do have Direct Volume rendering technique which visualize 
 One of the main disadvantage of these techniques is that, their computational speed is pretty low compared to the indirect volume rendering competitors. However, Ray casting especially, is able to often output better results in terms of source fidelity, and also because ray casting and the others direct volume rendering technique allows to visualize both the interiors and the exterior of the volume unlike the others approaches.
 
 \subsubsection{Surface rendering} %TODO 24
-This section will focus on the fundamental concepts of the common techniques that belongs to indirect volume rendering category. First a brief explanation of the Contour tracing algorithm, mentioned in the previous section, used during the early days of volume rendering in medical contexts. Then the core idea of Marching cube technique be described, as it is one of the main competitor in his category used in current state-of-the-art indirect volume rendering techniques, nowadays.\\
+This section will focus on the fundamental concepts of the common techniques that belongs to indirect volume rendering category. First a brief explanation of the Contour tracing algorithm, mentioned in the previous section, used during the early days of volume rendering in medical contexts. Then the core idea of Marching cube technique will be described, as it is one of the main competitor in his category used in state-of-the-art indirect volume rendering techniques, nowadays.
+\paragraph{Contour tracing}
+Contour tracing was one of the first approach studied in early days of medical imaging in the digital era and different techniques has been developed and proposed during, years each of which tried to solve some others lacks, such as :
+\begin{itemize}
+\item Square tracing
+\item Moore-Neighbor Tracing
+\item Radial Sweep
+\item Theo Pavlidis' Algorithm 
+\end{itemize}
+The differences between them lies in how the concept how adjacency is defined.
+%TODO cita http://www.imageprocessingplace.com/downloads_V3/root_downloads/tutorials/contour_tracing_Abeer_George_Ghuneim/alg.html
+Nevertheless, the underlying concept is shared among those algorithms.
 
-Marching cubes algorithm render the dataset, sending through the volume cubes with different configuration whom while traversing it, they depict the actual volume shape. Indeed, the output served by Marching cubes algorithm is a polygonal mesh of an isosurface computed from a 3-Dimensional discrete scalar dataset. It was first proposed and developed by E.Lorensen and H. E. Cline.\\ The input volume is subdivided in a grid of cubes, then values that falls beyond the isosurface threshold are interpolated with respect to vertices of the grid of cubes and a pre-computed array of vertices configurations. Those configurations are $256$ as $2^8 = 256$ and their purpose is to check for every cube of the grid, the correct configuration interpolating the grid vertex that falls into the isosurface. In this way, each time a configuration matches the corresponding interpolated vertex defined by the configuration are used to represent the surface.\\
+The core idea behind contour tracing techniques is to identify and extract the boundaries of a given digital image; within the context of medical imaging and volume rendering means: identify different tissue/region of a given volumetric data, applying the algorithm for each slice that forms the volume. 
 
-The proposed algorithm from Cline and Lorensen exploiting rotational and reflective symmetry along with changes in sign of the cubical configurations, the number of total configuration is narrowed down to 16 only. However, one of the main disadvantages is that it presented some discontinuities and topological issues, due to some ambiguities in the trilinear interpolation of the cubes that occurs in scenarios where there aren't sufficient vertex to determine the correct surface triangulation. %TODO cite original and wikipedia
+The concept can be described, in a very simplified and generic way, as a local operator %definire local operator
+applied to a single slice that build a polyline made of vertex by traversing the adjacent pixels in the 2-Dimensional space of the slice, which should belong to the contour that defines a region of that slice, following a specific traversing order clockwise or counter-clockwise. As most of the techniques in this field of studying, a threshold value guide defines the which pixels values must be considered and which one must be discarded.
+
+Something that is worth to mention is that, even if the generality of contour tracing techniques approach proceed in clockwise direction, Theo Pavlidis in his proposed version decided to approach in a counter-clockwise manner and he also defined few initial restriction conditions with respect to how the starting point is chosen, as he imposed that a starting pixel can be choose if and only if its left adjacent neighbor doesn't belong to the same pixel pattern.
+
+In the end, those algorithms must undertake further steps to build the isosurface needed from a 2-Dimensional polyline contour; these steps can be summarized as follow:
+\begin{itemize}
+\item Labeling by identification of different structures within the same slice, defined by the isovalue and sort them from the highest to the lowest order of characteristics.
+\item Tracing the contour from adjacent slices that represent the same object and connect them forming triangles.
+\item Rendering the triangles
+\end{itemize}
+
+
+Contour tracing suffer of different problems that are related to the intrinsic  proceeding way of the algorithm.
+
+The first, non-negligible, problem is related to complex pixel patterns, such as the one that presents holes, as this techniques is not able to recognize holes at all, ending up ignoring them completely.
+
+The second problem is related to the contour density in each slice and the tracing step, previously mentioned; Sometimes there are a lot of different contour and therefore different object inside a single slice or there is an high variation of them between slices, therefore it is very difficult to trace contours from one slice to the other, so most of the computation time is spent connecting the vertices of triangles from different heights.
+
+In order to overcome these important failing at some point in time in 1987, a new technique has been proposed that still provides good results, as it has been describe in the next paragraph.
+  
+
+\paragraph{Marching cubes}
+Marching cubes algorithm render the data set, sending through the volume cubes with different configuration whom while traversing it, they depict the actual volume shape. Indeed, the output served by Marching cubes algorithm is a polygonal mesh of an isosurface computed from a 3-Dimensional discrete scalar dataset. It was first proposed and developed by E.Lorensen and H. E. Cline. The input volume is subdivided in a grid of cubes, then values that falls beyond the isosurface threshold are interpolated with respect to vertices of the grid of cubes and a pre-computed array of vertices configurations.
+
+Those configurations are $256$ as $2^8 = 256$ and their purpose is to check for every cube of the grid, the correct configuration interpolating the grid vertex that falls into the isosurface. In this way, each time a configuration matches the corresponding interpolated vertex defined by the configuration are used to represent the surface.\\
+The marching cubes algorithm proceed can be summarize as follows:
+%TODO cite visualization handbook page 8?
+\begin{enumerate}
+\item Select a cell of the grid
+\item Compute the inside/outside state of each vertex of the cell.
+\item Create an index storing the state of each vertex in a separate bit
+\item Use the index to retrieve the corresponding edges from the lookup table of configurations.
+\item Linearly interpolate the founded edges to calculate the contour
+\item Compute the gradient
+\item Move to the next cell
+\end{enumerate}
+
+The proposed algorithm from Cline and Lorensen exploiting rotational and reflective symmetry along with changes in sign of the cubical configurations, the number of total configuration is narrowed down to 16 only. However, one of the main disadvantages is that it present some discontinuities and topological issues, due to some ambiguities in the trilinear interpolation of the cubes that occurs in scenarios where there aren't sufficient vertex to determine the correct surface triangulation. %TODO cite original and wikipedia
+
+Initially, marching cubes algorithm was protected by software patent, therefore an alternative was developed that didn't required any license and that solves the aforementioned ambiguity for some cubes configuration.
+
+\paragraph{Marching tetrahedra} works the same as marching cubes. However it solves the topological issues and discontinuities discussed before, giving in output almost always topological correct and watertight results.
+The basic idea, that in the end enchanted the results, is to improve the cubic configurations by making addition cuts breaking the cube into several tetrahedra.
+
+The advantage of using tetrahedra is that the are no more ambiguity with respect to the configurations. As only four vertices rather than eight are involved, the number of configuration determining the size of the lookup tables is much smaller. However, there two downsides of this approach:
+
+The first  is that Marching tetrahedra produces more triangles that aren't always needed for correctly rendering a volume; 
+
+The second is that an orientation of the tetrahedra must be defined and can produce bumps in the final produced surface,because of interpolation along the face diagonals.
 
 \subsubsection{Direct volume rendering} %TODO 25-26
-This section will describe, as it has been done in the previous section for indirect volume rendering techniques, direct volume rendering techniques. Briefly going from object-based direct techniques previously mentioned, such as Shear-Warp, Splatting and Texture-based, to image-based approach volume ray casting technique, with a deep explanation of the main concepts, its first proposed version and the currently state-of-the-art versions, used to solve today medical imaging problems.\\
+This section will describe, as it has been done in the previous section for indirect volume rendering techniques, direct volume rendering techniques. Briefly going from object-based direct techniques previously mentioned, such as Shear-Warp, Splatting and Texture-based, to image-based approach volume ray casting technique, with a deep explanation of the main concepts, its first proposed version and today still valid.
 
 As already said there exists different type of algorithms to directly render a volumetric dataset, without going through an intermediate layer like a mesh.
+Furthermore, they can be divided int two categories: object-based or image-based, depending on the starting space, object space or view space.
+
+\paragraph{Shear-Warp} Shear-Warp was introduced by Lacroute %TODO cite lacroute
+,this technique combines some of the advantages of both object-based and image-based algorithms. IT is very efficient because it combines the object-order traversal and the scan-line order sampling.
+It basically, project the volume from the object space to the image space in a way that the voxel grid is aligned with the viewing plane.
+In order to archive this results, it applies different transformations in a specific order, also known as affine transformations.
+Therefore,the algorithm proceed can be summarize as follows:
+\begin{enumerate}
+\item \textbf{Shear:} Transform the volumetric data into sheared object space, by translating and re-sampling the voxels, according to the Shearing ($S$) transformation matrix. In case of perspective view, scale each slice.
+\item \textbf{Project (3D $\rightarrow$ 2D):} Composite the resampled slices following front-to-back order, applying the over operator (see Composition schemas section).
+\item \textbf{Warp:} Warp the intermediate result image to the view space, to produce the correct finale output image.
+\end{enumerate} %TODO insert image of transformation matrix
+
+The reason why Shear-warp is a very fast techniques and is also used in state-of-the-art direct volume rendering algorithm, is due to some characteristics of sheared object space in which the slices of the volume data are transformed to.
+These properties are the following:
+\begin{itemize}
+\item The scan lines %TODO ref scan line
+of pixels in the intermediate image are parallel to scan lines of voxels in the volume.
+\item All voxels in a given slice are scaled by the same factor. Furthermore, if no perspective transformation is involved, all voxels have the scale factor.
+\end{itemize}
+Therefore, the composition is simplified a lot, as there exists a one-to-one mapping between voxels and intermediates pixels, this means that both voxels scan lines and pixel scan lines of the intermediate image can be traverse at the same time, following scan line order.
+
+\paragraph{Splatting} Splatting is another well known direct volume rendering technique that belongs that belongs to the object-base category. It can be summarize as an algorithm that distribute values of the volume data onto a view plane with different shape and following a distribution function.\\ The basic idea is to traverse the slice in a front-to-back manner and for each voxel compute which pixel of the image plane is covered by the voxel \textit{"footprint"} resulting from \textit{"trowing"} voxels toward the image plane; such \textit{"footprint"}, are 3D interpolation kernels %TODO 3d interpolation kernel
+and can have different shapes and opacity, usually they are similar to the Gaussian function; there exists different possible choices, but they don't give satisfying result as Gaussian.
+
+The algorithm can be summarize as follow:
+\begin{enumerate}
+\item For each voxel in each slice add a corresponding 3D interpolation kernel.
+\item For each voxel add the corresponding kernel to a 2-Dimensional bugger plane, known as buffer-sheet.
+\item Accumulate the buffer-sheet values into the compositing buffer, the final output image. 
+\end{enumerate}
+
+These techniques present some advantages: It is quite fast because interpolation is operated in 2-dimensional space; Can be easily parallelized;
+However, there are also different disadvantages: When to kernels overlaps, aliasing occurs leaving gaps on the output image; When zoomed in, the final image appears to be blurred, as the Gaussian function cuts away higher frequencies.
+
+\paragraph{Texture-based} Texture-based techniques are quite famous because they allows to exploit existing hardware capabilities and rendering techniques. There exists to type of texture-based algorithm: 2-D texture slicing and 3-D texture slicing. However, 2-D texture still outperform the latter for large volume and that's the reason why 3-D texture slicing will not be inside the focus of this explanation, as the main objective of this works is to handle large data set efficiently.
+The core concept of 2-D texture is to create slices of the volume, create polygons out of them and take advantage of existing implemented funcionality on graphics hardware for interpolation and compositing, such as: Rasterization, Texturing and Blending, available in almost all modern GPUs.
+
+The simplest implementation of 2-D texture slicing involves storing three different set of slices, one per each 2-Dimensional plane of the coordinate system (XY,YZ,XZ) and it requires interpolating the volume to get these sets.
+The second step is to load each 2D slice of a set into the texture memory buffer;  Simple squared (Four vertices) polygons are created for each slice and the corresponding slice texture stored in the buffer is applied by means of mapping
+%TODO ref texel
+texel coordinates to vertex coordinates.
+
+All the polygons are then , rendered and blended using common techniques, as already mentioned, such as rasterization and blending provided for example by OpenGL or other computer graphics libraries
+
+%TODO show image from texure slicing
+The choice of which slice set has to be selected and used during the proceed is determined by the angle and position of the view vector with respect to the volume center origin.
+
+In the end, the 2-D texture slicing technique can be summarized as follows:
+\begin{enumerate}
+\item Create slices sets one for each 2-Dimensional plane : XY, YZ, XZ.
+\item Depending of the viewing angle and position, choose the closest sets of slices (the ones that require less affine transformations to be perpendicular to the view)
+\item For each slice, store the values as separate textures in the texture buffer of the graphics device.
+\item Create one polygon for each slice in the set.
+\item Map texture coordinates to four polygon vertices
+\item Render and blend the polygons
+\end{enumerate}
+
+The main advantage of this approach is that it exploit graphics hardware broad rendering capacity and already available algorithms. However, there are few major disadvantages: The first one is the texture buffer memory, that can become a bottleneck of the algorithm as it can be saturated by very large volume data set; The other problem becomes evident when the viewing angle is moved to 45 degree with respect the current selected set of slices, because it is required to switch to another set and apply new transformations to made it perpendicular again.
+Last bu not least disadvantage is the needs of three different sets of slices that requires additional storing memory and a preliminary step of interpolation of the volume.
+
+\paragraph{Volume Ray casting}
 The most known direct volume rendering algorithm is Volume Ray casting,a first version along with an implementation has been proposed by %TODO add proposed%.
-The volume ray casting core concept is very similar to the one used int the ray tracing technique beside that in ray tracing multiple types of ray are sent, known as primary rays, secondary rays and so on based on the ray source. Another, very clear difference is that ray tracing deals with triangles, quads and polygon in general; volume ray casting deals with volumetric dataset composed by voxels, instead.
-The objective of the volume ray casting technique is to transform a 3-Dimensional volumetric dataset in a 2-Dimensional screen plane.\\
+Levoy introduced Volume ray casting as a ray tracing technique involving volumetric data set and it is not in the surface-based rendering. However, the naming convention is evolved as the time comes, separating the two techniques.
+
+Indeed, the core concept is very similar to the one used in the ray tracing technique beside that in ray tracing multiple types of ray are sent, known as primary rays, secondary rays and so on, based on the source from which they are generated. Another, very clear difference is that ray tracing deals with triangles, quads and polygon in general, as already said, Volume ray casting deals with volumetric dataset composed by voxels, instead.
+
+The objective of the volume ray casting technique is to transform a 3-Dimensional volumetric dataset in a 2-Dimensional projection of the latter in the form of digital image.
 
 Volume ray casting technique can be decomposed in four different steps %TODO state wikipedia
-: cast , sample color and opacity, compute shadow, store the final result in a 2D view plane, that represent the final output image.
-The starting point of the algorithm is the observer view point, or the camera center point present in development environment such as OpenGL or similar; the same camera concept has been used inside this thesis work as can be seen in the next chapters.\\
+: cast and traverse, sample color and opacity, compute shadow and store the final result in a 2D view plane, that represent the final output image.
+The starting point of the algorithm is the observer view point, or the camera center point as in development environment such as OpenGL or similar, for this reason, it is clear that ray casting is a pure image-based volume rendering technique.
 
-From the view point,one ray per each screen pixel is cast forward and through the volumetric data.
-In order to calculate the ray direction, an entry along with a exit point must be computed to determine the actual start and end of the volumetric data in the 3-Dimensional space with respect to the ray.\\
+The basic idea that characterize ray casting is that starting from the view plane, one ray is cast forward and through the volume; as defined by Levoy, those rays should be parallel to each other.
 
-The second phase involves the sampling of the voxels inside the volume, this operation is performed at a constant step along the ray. Color and opacity are sampled from the volumetric data in order to compute the final output view image. These values will be served to the next step to computer shadow.\\
+Therefore, in order to be able to traverse the volumetric data, as the first phase of the proceed of the algorithm, it is necessary to compute the entry and the exit point, in the 3-Dimensional space, of each ray with respect to the position of the volume with respect to the world-space coordinates.%ref to word-space coordinates%
+These exit and entry point, as will be described in the implementation chapter of this work, requires some collision detection calculation. 
 
-The shadow phase focuses in applying some illumination model of choice in order to better visualize the dataset. In order to achieve a fine looking there a different way of approximate the light integral with some global illumination algorithm like phong or blinn-phong algorithm.
+The second step involves the sampling of the voxels inside the volume and this operation is performed at a constant step along the ray.
+
+Color and opacity are sampled from the volume data in order to compute the final output view image and these values are sampled as emission values stored into the voxels, usually in the range of a 8 bit gray scale, from 0 to 255.
+
+The next phase involves spending few more computational power in order to calculate a properly shadowed value of the color, from the previous step. This is a very fundamental part of the proceed in the medical imaging context as it allows a good, otherwise useless, visualization of the dataset.
+
+In order to achieve the needed fine looking result, different approach can be taken involving some volumetric shading technique to approximate the light integral, such as Blinn-Phong global illumination model and approximation algorithm.
+
+In the end, the final result is store into a 2-Dimensional image by means of compositing all the values sampled and transformed during the previous steps, into one single value per pixel. Usually such values are store as vectors that belongs to the RGB color space%ref to rgb chapter%
+however as already seen in the color space chapter there exists different and more appropriate color space that doesn't encode the illumination inside the color itself.
+In order to compose such values there exists different operators that can be applied. The most common one is the over operator proposed by Porter%cite porter
+because it is also capable of dealing and preserving semi-transparency voxels values according to their opacity. More of these operators are describe in the Composition schemas section.
+
+There are two ways of compositing, back-to-front and front-to-back. They both have their pros and cons: back-to-front is the most simple method, however it is also the most expensive one in terms of computational requirements,because it doesn't allows any kind of optimization as all the voxels, from the least visible to the closest and visible one, must be accounted; On the other hand, front-to-back method requires more storage memory as additional variable are needed to save characteristics such as transparency.
+
+The volume ray casting technique proceed can be summarize as follows:
+\begin{enumerate}
+\item Define the number of ray according to the view screen size.
+\item Before casting, compute the starting and exiting point as 3-Dimensional coordinates with respect to volume world-space position.
+\item For each pixel of the view screen cast a ray through the volumetric data set.
+\item At a constant step, sample voxels values of color and opacity and store them into the respective ray.
+\item Transform each of these value by means of volumetric shading technique
+\item Compose the final result back-to-front or front-to-back applying a chosen operator.
+\end{enumerate}
+
+Ray casting has different advantages, as it is simple and easy to implement in its very basic version, it allows different degrees of freedom in choosing which method or algorithm should be used during the different phases and its final result doesn't suffer of any artifacts that are present with other techniques instead.
+
+However, there is a major cons while using this technique: its basic implementation is very slow and poor in terms of efficiency. This problem is the reason why it is not yet used in state-of-the-art medical imaging techniques even  it does produces very good results.
+
+The aim of this work, as already stated, is exactly to build starting from scratch, a volume ray casting algorithm that can compete with nowadays state-of-the-art competitors exploiting modern graphics devices.
+
+\subsection{Composition schemas}
 
 
 \subsection{Volume rendering state-of-the-art} %TODO 26-28
