@@ -1,6 +1,6 @@
 \documentclass[12pt,a4paper]{extarticle}
-
 \usepackage[utf8]{inputenc}
+\usepackage{csquotes}
 \usepackage[english]{babel}
 \usepackage{amsmath}
 \usepackage{amsfonts}
@@ -8,8 +8,9 @@
 \usepackage{graphicx}
 \usepackage{lmodern}
 \usepackage{fancyhdr}
-
+\usepackage{listings}
 \usepackage[style=alphabetic]{biblatex}
+\usepackage[dvipsnames]{xcolor}
 \addbibresource{references.bib}
 
 %\usepackage[a4paper,left=3cm,right=2cm,bottom=4cm,headheight=110pt]{geometry}
@@ -24,8 +25,22 @@
   \begin{matrix}(#1)\end{matrix}%
 }
 \newcommand{\linespace}{\vspace{8pt}}
+
+\lstnewenvironment{cpp}[1][]
+{\linespace \lstset{language=C++,
+				frame=single,
+				captionpos=b,
+                keywordstyle=\color{RoyalBlue},
+                morekeywords={mxREAL , mxArray , __global__ , __device__ , __host__, std::, Vector3, Camera, Grid,}
+                stringstyle=\color{Red},
+                commentstyle=\color{Gray},
+                morecomment=[l][\color{magenta}]{\#},
+                escapechar=@,
+                #1}}
+{}
+
 \author{Antonio Fortino}
-\title{Volume ray casting accellerated with CUDA in Matlab MEX context}
+\title{Volume ray casting accelerated with CUDA in Matlab MEX context}
 \begin{document}
 \pagenumbering{gobble}
 \maketitle
@@ -41,11 +56,12 @@ University of Calabria
 \fancyhead[R]{\thepage}
 \tableofcontents
 \pagebreak
-\pagenumbering{arabic}
+
 \section*{Introduction} 
 \addcontentsline{toc}{section}{Introduction}
 \pagebreak
 \fancyhead[L]{\nouppercase{\leftmark}}
+\pagenumbering{arabic}
 \section{Basics of visualization}
 \subsection{Computer graphics concepts} 
 Computer graphics is field of computer science that deals with computer-based imaging.
@@ -963,10 +979,463 @@ As shading technique, in VolumePro 1000  Phong shading illumination model is use
 \linespace
 Part of this work is to be able to built a fully image-based algorithm based on the ray casting technique which reaches the degree of efficiency and quality in term of execution speed and output image quality similar to the ones reached when deploying VolumePro 1000. In the next section a fully detailed description of the architecture, technologies and concepts used in an attempt to reach such results.
 \pagebreak
-\section{Visualization algorithm implementation} 
+\section{Renderer implementation} 
+This work focuses on building a volume rendering algorithm that can exploit the power available on graphics hardware, through parallelization. Furthermore, the objective is to distribute such algorithm in an environment that is regularly used in research and academic fields, in order to simply the integration in other systems whom need an efficient volume renderer.
+
+
+In this chapter, will be given a description of technologies used, and reasons behind each made choice, to be able to fulfil the thesis objectives.
+\linespace
+
+First of all, an explanation about MATLAB environment and its precious MEX functions: what are they, why are they useful and how, in order to integrate a common MATLAB program with one written in an external programming language like C++.
+
+Then, a brief introduction over CUDA framework and programming model, why it has been chosen over other parallel programming libraries and framework and how it works.
+
+After the technologies section, there will be a deep dive into the algorithm itself; describing the underlying architecture on which it is modelled and the concepts borrowed from the original work by Levoy, on efficient volume ray tracing algorithm.
+\linespace
+
+There will be a first section about the base non-parallel version of the developed algorithm, which has been built first for different reasons:
+
+First of all, the non accelerated algorithm has been developed in order to have a lower bound in terms of efficacy and efficiency of the renderer; very useful, as it will be used during comparisons and while drawing the final conclusions about this work.
+
+Secondly, a natural way of developing parallel software is to start from the non-parallel counterpart and then proceed step by step with a conversion from the linear execution and written code, to the concurrent execution and respective instructions.
+
+A full explanation of the different parts that are composing the algorithm will be given along with excerpts of the code, trying to separate each concept following the steps describe in the previous section about direct volume rendering technique with respect to ray casting.
+
+The integration between the MATLAB environment and the C++ code will be describe focusing on single instructions needed to communicate from and to a MATLAB program.
+\linespace
+
+Then, the accelerated version will be presented and explained. A description of the proceed need to go from the basic version to the parallel one will be given, which shows the code transformations from the common programming model used for the basic version to the CUDA programming model. 
+
+Description of the most crucial code part will be given that shows those transformations along whit whichever changes in underlying data structure involved.
+
 \subsection{Technologies} 
+\subsubsection{MATLAB and MEX functions}
+MATLAB, that stands for matrix laboratory, is a multi-paradigm numerical computing environment and proprietary programming language developed by MathWorks. It allows matrix manipulation, easy plotting of data and function and creation of user interface.
+It is an integrated development environment which widely use in academic field, due to its power and enormous number of functionality that are available with the core version but whom rocket-up exponentially with the numerous plug-ins.
+
+A MATLAB application is built using the MATLAB scripting language and the Command Window is usually used as an interactive mathematical shell or to execute MATLAB code.
+%ref https://en.wikipedia.org/wiki/MATLAB
+\linespace
+
+One of the most interesting and useful feature of MATLAB, with respect to this work, is the MEX file.
+\paragraph{MEX file and functions} The term MEX stands for "MATLAB executable". %ref https://de.mathworks.com/help/matlab/matlab_external/introducing-mex-files.html
+There are different definitions:
+\begin{itemize}
+\item MEX file: it refers to the source code file written in an external programming language such as C, C++ or Fortran,
+\item MEX function: it refers to the binary subroutine compiled from the source code file.
+\end{itemize}
+
+A MEX file can contain only one function or subroutine which is identified by the file name without the file extension.
+
+MEX functions have very important features such as:
+\begin{itemize}
+\item They can be dynamically loaded inside a MATLAB program as normal MATLAB functions
+\item They are compiled at runtime.
+\item it exposes different API that allows the integration of external function simplifying the communication between the workspace and the subroutine.
+\end{itemize}
+
+In order to be able to create a MEX file and therefore call MEX functions from MATLAB a MATLAB-supported compiler must be installed such as: MinGW or MS C++\footnote{https://de.mathworks.com/support/requirements/supported-compilers.html} and write the function with one the available API. For the sake of simplicity, only APIs used for this thesis will be explained which are used for functions written in C or C++ programming languages, called C MEX API and C Matrix API.
+
+The first step to write a MEX function in C++ is to define it with \textit{mexFunction} function, which is the entry point to C/C++. It acts as the gateway between C++ and MATLAB workspace that identify a MEX function.
+
+When a MEX functions is invoked, MATLAB find and loads the corresponding MEX functions of the same name. Then it searches for a symbol named \textit{mexFunction} within the MEX function. Such function is defined as follows: %ref https://de.mathworks.com/help/matlab/apiref/mexfunction.html
+
+\begin{cpp}[caption={MEX functions C/C++ entry point definition},label=code:mexfunction]
+#include "mex.h"
+void mexFunction(int nlhs, mxArray *plhs[], int nrhs, 
+	const mxArray *prhs[])
+\end{cpp}
+
+The signature that define this function is composed of four arguments, which are automatically seeded by MATLAB when the MEX function is called with the calling arguments.
+
+The arguments \textit{nlhs} and \textit{nlhs} contains the number of right and left arguments, respectively. Therefore, it is clear that \textit{plhs} and \textit{prhs} are two pointers to arrays of type mxArray, with length of \textit{nlhs} and \textit{nrhs}. These pointers are the input arguments and the outputs of the MEX function respectively, which has the following general form, in the MATLAB syntax.
+
+\[
+\begin{matrix}
+o_{0},o_{1},o_{2}, \cdots
+\end{matrix}
+= func (a_{0}, a{1},a{2}, \cdots )
+\]
+
+Where $o_{m}$ represents the $m-element$ left-side output argument and $a_{n}$ represents the $n-element$ right-side input argument, with $n < prhs$ and $m < plhs$,respectively.
+\linespace
+
+The fundamental type underlying MATLAB data is \textit{mxArray}. It is an opaque C data type\footnote{An language type is defined \textit{opaque} when the concrete representation of the type is hidden from its users, and the visible implementation is incomplete. This enforces information hiding, since its values can only be manipulated by calling help functions that have access to the missing information.} and the structure contains the following information about the array:
+
+\begin{itemize}
+\item Its type
+\item Its dimensions
+\item The data associated with the array
+\item If numeric, whether the variables is real or complex
+\item If sparse, its indices and non-zero maximum elements
+\item If a structure or object, the number of fields and filed names
+\end{itemize}
+\linespace
+
+All MATLAB variables (including scarlas, vectors, matrices, character arrays, cell arrays, structures or objects) are stored as MATLAB arrays, whom are declared of type mxArray in C/C++.
+
+There exists different data types in MATLAB:
+\paragraph{Complex double-precision matrices}
+Complex double-precision matrix is the most common data type in MATLAB. These matrices are of type \textit{double} and have dimensions m-by-n, where $m$ and $n$ are the number of rows and the number of columns, respectively. The data inside the matrix is stored as a vector of interleaved, double-precision numbers where the real and the imaginary parts are stored next to each other\footnote{To test for a non complex matrix, mxIsComplex helper function must be called.}.
+\paragraph{Other numeric matrices}
+MATLAB also suppers single-precision floating point and 8, 16, 32 and 64-bit integers, both signed and unsigned.
+\paragraph{MATLAB char arrays}
+In MATLAB, \textit{char} arrays are data stored as unsigned 16-bit integers. In order to convert a MATLAB \textit{char} array to a C-style string, \textit{mxArrayToString} subroutine bust be called; vice versa, to convert a C-Style string to a \textit{char array}, \textit{mxCreateString} is used.
+\paragraph{Cell arrays}
+Cell arrays are a collection of MATLAB arrays where each \textit{mxArray} is referred to as a cell. Cell arrays allow storing together MATLAB arrays of different types. They are stored in a similar manner to numeric matrices, except the data portion contains a single vector of pointers to \textit{mxArrays}. Member of this vector are called cells and each cell can be of any supported data type, even another cell array.
+\paragraph{Structures}
+Structures are stored in the same way as a 1-by-n cell array where $n$ is the number of fields in the structure. Members of the data vector are called fields and each filed is associated with an identifying name, stored in the \textit{mxArray}.
+\paragraph{Objects}
+Objects are stored and accessed the same way as structures. In MATLAB, objects are named structures with registered methods; Outside of it, an object is a structure that contains additional stored information of the class name, that identify the name of the object.
+\paragraph{Multidimensional arrays}
+MATLAB arrays of any type can be multidimensional. A vector of integers is stored where each element is the size of the corresponding dimension. the storage method of the data is the same as for matrices.
+\paragraph{Empty arrays}
+In MATLAB, arrays of any type can be empty. An empty \textit{mxArray} is one with at least one dimension equal to zero.\footnote{For example, a double-precision \textit{mxArray} of type double, where its dimensions $m$ and $n$ are equal to 0 and the pointer is NULL, is an empty array.} 
+%ref https://de.mathworks.com/help/matlab/matlab_external/matlab-data.html
+\linespace
+
+In order to declare a data structure of type \textit{mxArray} inside C/C++ code and to define its values, the following statement must be written:
+\begin{cpp}[caption={Declaration and definition of a floating-point non complex mxArray named myData of size m-by-1, initialized to 0},label=code:createmydata] 
+mxArray *myData = mxCreateDoubleMatrix(m,1,mxREAL);
+\end{cpp}
+
+There exists an mxCreate* function for each of the supported MATALAB data type other than double-precision floating-point array, for example\footnote{For the sake of clarity some creational functions are omitted. The full list of available functions can be found at \cite{create_del_mxarray:2}} 
+\begin{itemize}
+\item \textit{*DoubleScalar}: for Scalar, double-precision array.
+\item \textit{*NumericMatrix}: for numeric matrix of size m-by-n.
+\item \textit{*String}: for 1-by-n array initialized to a specified string.
+\item \textit{*LogicalMatrix}: for m-by-n logical array.
+\item \textit{*StructMatrix}: for m-by-n structure array.
+\item \textit{*CellMatrix}: for m-by-n cell array
+\end{itemize}
+
+The creation counterpart is defined as the following statement, that frees the dynamic memory allocate by mxCreate* functions such as the previous call:
+
+\begin{cpp}[caption={Deallocation of dynamic memory referred by myData \textit{mxArray} pointer, from Listing \ref{code:createmydata}},label=code:mxarraydestroy]
+mxDestroyArray(myData);
+\end{cpp}
+
+\textit{mxDestroyArray} deallocates memory for the specified \textit{mxArray} including:
+\begin{itemize}
+\item Characteristics field of the \textit{mxArray} such as size and type.
+\item Associated data arrays
+\item Fields of structure arrays
+\item Cells of cell arrays
+\end{itemize}
+
+However, it should not be called on a \textit{mxArray} that:
+\begin{itemize}
+\item It is returned in a left-side argument of a MEX function.
+\item Returned by the \textit{mxGetField} or \textit{mxGetFieldByNumber} functions.
+\item Return by the \textit{mxGetCell} function.
+\end{itemize}
+%ref https://de.mathworks.com/help/matlab/apiref/mxdestroyarray.html
+
+The last bit about MEX functions and \textit{mxArray} fundamental type is how to access and write data from and to an defined \textit{mxArray}.
+
+First of all, as already mentioned, any variable declared as a \textit{mxArray} is indeed and array in C/C++ context. Therefore as any other array in C/C++ the array subscript operator [ ] is defined, that allows users to access the element stored at the position, specified by an integer value. %ref http://www.cplusplus.com/doc/tutorial/arrays/
+\linespace
+
+In the same way helper functions were defined to create new \textit{mxArrays}, helper functions are defined to access and write data with respect to the MATLAB target type.
+
+For example, the following statement describe how to read from the MEX function input argument \textit{prhs} element at position 0 which points to an array of one single element.
+
+\begin{cpp}[caption={Accessing the first non-imaginary element of the mxArray pointer passed as argument from the MEX function input arguments},label=code:mxarraygetscalar]
+/* get the value of the scalar input  */
+double multiplier = mxGetScalar(prhs[0]);
+\end{cpp}
+
+The array subscript operator works the same manner as in C/C++, then it can be used to modify and set values at specified array position. Listing \ref{code:mxarrayset} shows how to create a new mxArray matrix of floating-point non-complex type of size m-by-n and how to set a new value for first element of the first output argument of the MEX function.
+
+\begin{cpp}[caption={Create the output matrix corresponding to the first output array. Get the pointer to the real data and set a new value for the first element},label=code:mxarrayset]
+/* create the output matrix */
+plhs[0] = mxCreateDoubleMatrix(m,n,mxREAL);
+/* get a pointer to the real data in the output matrix */
+double *outMatrix = mxGetDoubles(plhs[0]);
+/* modify the first element with a new value */
+outMatrix[0] = 1;
+\end{cpp}
+
+As can be seen, the notation used was with a single couple of square brackets, even if the output matrix is of size m-by-n. The reason is that, matrices defined of type \textit{mxArray} are accessed by means of a single index, because of the way C/C++ storing technique allocate matrix in a contiguous fashion, in row-major order\footnote{In a row-major order, the consecutive elements of a row are allocated in memory next to each other. %ref https://en.wikipedia.org/wiki/Row-_and_column-major_order
+}.
+
+
+\subsubsection{CUDA framework}
+CUDA is a framework and programming model that let its users build parallel applications which exploit the power of GPUs, developed by NVIDIA whose objective was to release a \textit{bundle} which consists of a compiler, libraries, and runtime software, to enable programmers to readily access a new data-parallel computation model and develop application.\cite{KirkHwu_2014:3}
+
+The computing system, from the CUDA perspective, is divided in two main parts: an host and one or more devices. The host is a traditional CPU, and a device is a processors with a massive number of arithmetic units, typically a GPU.
+
+In order to be able to safely perform parallel computation, a modern software application must at least exhibit what is called data parallelism.\footnote{Data parallelism in snot the only type of parallelism widely used in parallel programming. Task parallelism has also been used extensively in parallel programming. Task parallelism is typically exposed through task decomposition of applications.\cite{KirkHwu_2014:3}}
+
+Such phenomenon allows arithmetic operations to be performed on different parts of the data structure in parallel, and CUDA devices accelerate the executions of these applications by applying their massive number of arithmetic units to these data-parallel programs.
+\linespace
+
+CUDA is heterogeneous programming model because any CUDA program reflect the coexistence of a host(CPU) and one or more devices(GPUs) in the computer. Indeed, a CUDA source file usually have a mixture of both host and device code.
+Any traditional C/C++ program can be seen as a CUDA program that contains only host code.
+
+\begin{cpp}[caption={CUDA keywords for function declarations},label=code:cudakeywords]
+/*Marked function that will be executed on the device, but only 
+	callable from another device function*/
+__device__ float deviceFunction()
+
+/*Marked function that will be executed on the device, but only 
+	callable from a host function*/
+__global__ void kernelFunction()
+
+/*Marked function that will be executed on the host that can be 
+	called only from another host function*/
+__host__ float hostFunctions()
+\end{cpp}
+
+
+Host and device code are clearly marked with special CUDA keywords, as shown in Listing \ref{code:cudakeywords}. $\_\_device\_\_$ and $\_\_global\_\_$ keywords mark functions that will run on the processing unit of connected devices. The subtle difference resides on who can call such functions, $\_\_device\_\_$ marked functions are called from another functions that runs on the device, and $\_\_global\_\_$ marked ones are called only from host-running functions. 
+\linespace
+
+The $\_\_host\_\_$ keyword indicates that the functions being declared is an host function. Such function is simply a traditional C/C++ function that execute on the host and can only be called from another host function. By default, all functions that are not marked by any CUDA keywords, are host functions.It is interesting noting that it is possible to use both $\_\_host\_\_$ and $\_\_device\_\_$ keywords in a function declaration, as it instruct the compilation system to generate two versions of the same function, one executed on the host and one execute on the device.
+\linespace
+
+$\_\_global\_\_$ marked device functions are also known as \textit{kernels}. When a kernel function is called, or \textit{launched} from an host call, it is executed by a large number of threads on a device to exploit data parallelism, generated by the CUDA runtime system.
+
+All threads that are generated by a kernel launch are collectively called a \textit{grid}. Each grid is organized into an array of thread blocks.
+
+Such blocks of a grid are of the same size and each block can contain up to 1024 thread. Figure \ref{fig:cudagridblock} shows how threads hierarchy is organized, where each block consists of 256 threads.
+\begin{figure}[hbtp]
+\centering
+\includegraphics[scale=0.7]{images/cudathreadgrid.png}
+\caption{All threads in a grid execute the same kernel code and are organized into an array of thread blocks.}
+\label{fig:cudagridblock}
+\end{figure}
+
+
+Each thread in a block has a unique $theadIdx$ index,similarly each block in a grid has a unique $blockIdx$ identifier. This allows each thread to be uniquely identified inside a grid by combining its $threadIdx$ and the $blockIdx$ values to along with the specified block's number of thread values $blockDim$, as described by the following formula:
+
+\[
+i = blockIdx.x * blockDim.x + threadIdx.x
+\]
+
+By launching the kernel with a larger number of blocks, one can process larger amount of data. For example, by launching a kernel with $n$ or more threads, it is possible to process vectors of length $n$.
+\linespace
+
+In order to launch a kernel function, the host code has to set the frid and thread block dimensions via \textit{execution configuration} parameters, illustrated in Listing \ref{code:kernelconfig}.
+
+The configuration parameters are given between the $<<<$ and $>>>$ before the traditional function arguments. The first configuration parameter gives the number of thread blocks in the grid. The second one specifies the number of threads in each thread block. In the example below, there are 256 threads in each block and $n/256.0$ thread blocks where $n$ is the dimension of our data.
+
+\begin{cpp}[caption={A kernel function launch statement.},label=code:kernelconfig]
+kernelFunc<<<ceil(n/256.0), 256>>(input data);
+\end{cpp}
+
+Once device functions and data declarations are added into a C/C++ source file, it is no longer acceptable to a traditional compiler. The code needs to be compiled by a compiler that recognizes and understands these additional declarations. For this reasons, a CUDA compiler by NVIDIA is used, called NVCC.
+Figure \ref{fig:cudacompiler}, shown the NVCC that processes a CUDA program at the top, suing the CUDA ketwords to separate the host code from the the device code. The host code is further compiled with the hots's standard C/C++ compilers and in run as a traditional CPU process.Instead, the device code is further compiled by a runtime component of NVCC and execute on a GPU device.
+\begin{figure}[hbtp]
+\centering
+\includegraphics[scale=0.7]{images/cuda-compiler.png}
+\caption{Overview of the compilation process of a CUDA program}
+\label{fig:cudacompiler}
+\end{figure}
+
+%TODO add conclusion
+
+
 \subsection{Architecture} 
+This work and actual implementation follows the previous work of Levoy about volume ray tracing, mainly.
+
+Figure \ref{fig:architecture} shows the algorithm architecture with respect to the entire ecosystem and how it interact with other MATLAB programs as well as the relationship with the accelerating CUDA framework. As can be seen, in order to build a broadly available rendering algorithm all the proceed is encapsulated inside a MEX function that will let users to include it inside every other MATLAB program that require a fast effective and real-time volume rendering algorithm, by passing the right required arguments and receiving the resulting output 2-Dimensional image with the projected volumetric input dataset as expected from a volume ray casting algorithm. %TODO cite levoy
+
+\begin{figure}[hbtp]
+\centering
+\includegraphics[scale=0.6]{images/volumearchitecture.png}
+\caption{Algorithm architecture. A MATLAB program calling with input arguments the MEX function that return the final output image}
+\label{fig:architecture}
+\end{figure}
+
+The procedure as other MEX functions, is called by the file name as showed in Listing \ref{code:volumecall}. It requires different input arguments to be able to work properly :
+\begin{itemize}
+\item Two volumetric datasets, containing different information,the second one optional.
+\item The 3-Dimensional size of the volume.
+\item Rotation components, defined as Yaw, Pitch and Roll.
+\item Alpha opacity values defined as an array of double.
+\item Array of colors, defined in RGB format.
+\item The specular component, that defines the ratio between a full diffuse rendering and an full specular. 
+\item The threshold value, used to select which voxel intensity is discarded.
+\end{itemize}
+
+\begin{cpp}[caption={Volume rendering MEX function call with left and right arguments, respectively output and input arguments},label=code:volumecall]
+output = Volume(vol,objs,infoStruct);
+\end{cpp}
+
+The first volumetric dataset store the voxels' intensity values that defined the actual volume. Each value is bounded to $[0,\,255]$ value range, where $0$ is the empty space around the volume. The second volume stores the different objects that are composing the original volume. Values are stored in the same way as in the original volume, as a 3-Dimensional grid of voxels but instead of intensity they represent objects. 
+
+The data format is of type integer in the range of $[0,\,(N-1)]$ where $N$ is the total number of objects whom compose the volume. This second volume is optional but it can't be omitted from the input arguments, so it can be passed as empty volume.
+
+Except the two volume datasets, all the other arguments must be defined as a MATLAB struct, as it requires a lot of arguments.
+\linespace
+
+The threshold value let users display all voxels with intensity value greater or equal then the threshold, as stated in %TODO cite display of surfaces from volume data
+this produces 3D regions of opaque voxels, where the outermost layer of which is the desired surface.
+The classification procedure employed is this work wouldn't be able to display concentric semitransparent surfaces or object, as reported by Levoy in %TODO cite display of surfaces from volume data
+. To solve this issue, the second volumetric dataset that contains every object of interest in the volume is used along with the opacities array.
+\linespace
+
+The alpha opacities array is used to define the opacities of the object. Indeed, the size of the array $N$ must be equal to the number of objects defined in the second volume. 
+Although, this array have also another purpose, if the size $N$ is equal to 1 it defines the global opacity of the volume.
+
+Another input argument strictly related to the classification and number of objects defined in the second volume, is the colour array.
+\linespace
+
+The colour array helps the visualization separating all the objects with different colours. The colours must be defined in RGB color space and format.
+As well as for the opacities array, the colours array size $N$ must be equal to the number of objects defined in the visualization. The only little difference between the behaviour of the algorithm for opacities and colours is that if no colour is defined in input and no objects are stated as well, the algorithm will render the volume in a gray scale using directly voxels intensity values. 
+\linespace
+
+The last argument is the rotational array in Yaw, Pitch and Roll format. In order to build an interactive system on top the algorithm of this work, a camera is needed to let users interact with volume and look at it from different point of view. Therefore, the rotation array allows moving such camera around the center of volume by means of the definition of a Yaw angle, a Pitch angle and a Roll angle that allow a camera to move freely around a pivot point.
+\linespace
+
+Very similar to the way Levoy formalized his work and as explained previously in direct volume rendering techniques section,
+Figure \ref{fig:steps} shows how the algorithm has been decomposed in different steps. Each step has been developed almost independently while trying to apply the most effective techniques.
+
+
+\begin{figure}[hbtp]
+\centering
+\includegraphics[scale=0.5]{images/steps.png}
+\caption{Algorithm expanded steps whom cover different important aspects.}
+\label{fig:steps}
+\end{figure}
+
 \subsection{Basic volume ray casting} 
+In this section, the proceed steps showed before will be explained step-by-step describing all the techniques employed in each step in order to reach the goal behind this work.
+Starting right after reading the input volume and the other input arguments the first step is to set up the bounding box around the volume.
+
+\paragraph{Bounding box}
+
+A bounding box, also known as \textit{minimum bounding box} in geometry, is a box for a point set $S$ in $N$ dimensions with the smallest measure within which all the points lie, and it is usually used to speed up computations. In the 2-Dimensional case it is called the \textit{minimum bounding rectangle} and the measure used to check the required condition is the area. In the 3-Dimensional case instead the measure used of the bounding box is the volume.
+%TODO cite https://en.wikipedia.org/wiki/Minimum_bounding_box
+\linespace
+
+There exists two different type of bounding box (Figure \ref{fig:boundingbox}): \textit{Axis-aligned minimum bounding box} and \textit{Arbitrarily oriented minimum bounding box}.
+
+\begin{figure}[hbtp]
+\centering
+\includegraphics[scale=0.7]{images/boundingbox.png}
+\caption{Axis-aligned(left) and Arbitrarily oriented(right) minimum bounding boxes coloured in gray.}
+\label{fig:boundingbox}
+\end{figure}
+
+
+\textit{Axis-aligned minimum bounding box} or \textbf{AABB} for a given point set is its minimum bounding box subject to the constraint that the edges of the box are parallel to the coordinate axes. It used to approximate location of an object in question and as a very simple descriptor of its shape.
+
+\textit{Arbitrarily oriented minimum bounding box} instead is the minimum bounding box, calculated subject to no constraints as to the orientation of the result.
+\linespace
+
+The AABB bounding box concept in 3-Dimension and in computer graphics, as well as in this work is known under the name of \textit{bounding volume}. It is used to improve the efficiency of geometrical operations by using simple volume to contain more complex objects, as simpler volumes have simpler ways to test for overlap.
+%TODO cite https://en.wikipedia.org/wiki/Bounding_volume
+
+In ray casting, and so in this implementation as well, bounding volumes are used in ray-intersection test. If the ray does not intersect the bounding volume, it cannot intersect the object contained within, allowing trivial rejection.
+
+This is one of the first speed-up in the implementation as part of the sequent ray casting and voxels intersections step of the algorithm. The reason is that with \textit{AABB} bounding volume all the multitude of cast rays can trivially checked if they end up inside or outside of volumetric dataset boundaries.
+
+
+Listing \ref{code:gridinit} shows how the bounding box is initialized with respect to the size of the volumetric dataset by means of the \textit{Grid} class, where the first parameter \textit{Vector3(0)} is the origin of the world space and \textit{sizeArray} is the array that stores the volume dimensions and th
+
+\begin{cpp}[caption={Grid class represent the minimum bounding box.},label=code:gridinit]
+Grid grid(Vector3(0), 
+	Vector3(sizeArray[0], sizeArray[1], sizeArray[2])
+	);
+\end{cpp}
+
+\paragraph{Camera setup} The next step is set the camera parameters. The meaning of the camera is to allow users to interact with the volume performing rotation around the center of the dataset.
+
+First the class representing the camera must be defined. Listing \ref{code:cameraone} shows the attributes that compose the class, its constructor and methods headers, which will explained later on.
+
+\begin{cpp}[caption={Camera class definition with },label=code:cameraone]
+class Camera {
+public:
+	Vector3 center;
+	Vector3 from,to,forward,backward,right,up;
+	Matrix4x4 lookAt,rotationM;
+	double theta, phi, sigma;
+
+	Camera(Vector3 from, Vector3 to) {
+		this->from = from;
+		this->to = to;
+		this->rotationM = Matrix4x4();
+	}
+	void yaw(const double& angle) {@ $\cdots$ @}
+	void pitch(const double& angle) {@ $\cdots$ @}
+	void roll(const double& angle) {@ $\cdots$ @}
+	void setupLookAtMatrix() {@ $\cdots$ @}
+};
+\end{cpp}
+
+As can be seen, the Camera class constructor require in its signature two 3-Dimensional vectors. These two vectors are needed in order to build the \textit{lookAt} matrix that let users position and steer the camera. The \textit{from} vector defines the position of the camera in the 3-Dimensional world space, while the second one, the \textit{to} vector, defines the camera orientation with respect to a target point which the camera will be pointing at.
+The last statement in the constructor initialize the transformation matrix that will hold all the subsequent rotation matrices which will be created by the yaw, pitch and roll functions.
+\linespace
+
+Therefore, the camera will be defined and initialized as shown in Listing \ref{code:camerainit}, where \textit{sizeArray} is still the array that stores the volume dimensions and \textit{options.viewOffest} is a constant double precision variable that defines a viewing offset that let the camera be positioned not too far from the volume but enough to be able to show the entire volume.
+
+\begin{cpp}[caption={Camera definition and initialization.},label=code:camerainit]
+Camera camera(
+	Vector3(sizeArray[0]/2 + options.viewOffset, 
+		sizeArray[1]/2, sizeArray[2]/2), 
+	Vector3(sizeArray[0]/2, sizeArray[1]/2, sizeArray[2]/2)
+	);
+\end{cpp} 
+
+Yaw, pitch and roll functions create the transformation matrices, as defined in the section about affine transformations, that rotate the camera. As already said, those transformation are needed to let the camera move around a pivot point, which is the center of the volume as defined in the construction call.
+
+Listing \ref{code:camerarotate} shows the yaw, pitch and roll rotations, that are respectively Z-Axis, Y-Axis and X-Axis in the world space.
+
+\begin{cpp}[caption={},label=code:camerarotate]
+void yaw(const double& angle) { // z-axis
+	theta = degToRad(std::fmod(angle, 360));
+	Matrix4x4 rZ = Matrix4x4(
+		std::cos(theta), -1*std::sin(theta), 0, 0,
+		std::sin(theta), std::cos(theta), 0, 0,
+		0, 0, 1, 0,
+		0, 0, 0, 1);
+	rotationM = rotationM.matrixMulti(rZ);
+}
+void pitch(const double& angle) { // y-axis
+	phi = degToRad(std::fmod(angle, 360));
+	Matrix4x4 rY = Matrix4x4(
+		std::cos(phi), 0, -1*std::sin(phi), 0,
+		0, 1, 0, 0,
+		std::sin(phi), 0, std::cos(phi), 0,
+		0, 0, 0, 1);
+	rotationM = rotationM.matrixMulti(rY);
+}
+void roll(const double& angle) { // x-axis
+	sigma = degToRad(std::fmod(angle, 360));
+	Matrix4x4 rX = Matrix4x4(
+		1, 0, 0, 0,
+		0, std::cos(theta), -1*std::sin(theta), 0,
+		0, std::sin(theta), std::cos(theta), 0,
+		0, 0, 0, 1);
+	rotationM = rotationM.matrixMulti(rX);
+}
+\end{cpp}
+
+Each function has an input argument that is the rotating angle expressed in degrees of the respective rotational axis. This angle in then converted from degrees to radiant due to the formal requirement of the mathematical functions \textit{sin} and \textit{cos} of the C++ standard library which require that angles are express in radiant instead of degrees.
+Then, the rotational matrix is defined and multiplied with a matrix multiplication by means of the member function \textit{matrixMulti} to the final rotation matrix of the camera.
+\linespace
+
+Finally, all these transformations applied to the \textit{rotationM} matrix contribute to generate the \textit{lookAt} matrix which defines the final position and orientation of the camera. Listing \ref{code:cameralookat} shows how the lookAt matrix is built from the two input parameters of the camera class constructor and the final \textit{rotationM} rotational matrix , following the procedure already discussed in section of affine transformations.
+
+\begin{cpp}[caption={Camera class member function that build the lookAt transformation matrix, applying the final \textit{rotationM} matrix which group all the rotational transformation matrices. },label=code:cameralookat]
+void setupLookAtMatrix() {
+	backward = from - to;
+	backward = rotationM.DirMatrixMulti(backward);
+	from = to + backward;
+	Vector3 tmp = rotationM.DirMatrixMulti(Vector3(0, 1, 0));
+	forward = (to - from).normalize();
+	right = tmp.cross(forward);
+	up = forward.cross(right);
+	lookAt = Matrix4x4(
+		right.x, right.y, right.z, 0,
+		up.x, up.y, up.z, 0,
+		forward.x, forward.y, forward.z, 0,
+		from.x, from.y, from.z, 1);
+}
+\end{cpp}
+
 \subsection{Parallelize with CUDA} 
 \section{Conclusions} 
 \subsection{Rendering results} 
@@ -974,8 +1443,9 @@ Part of this work is to be able to built a fully image-based algorithm based on 
 \subsection{Final considerations} 
 \subsection{Discussion} 
 \subsection{Outlook}
+\pagebreak
 \section*{References}
 \addcontentsline{toc}{section}{References}
 \nocite{*}
-%\printbibliography[heading=none]{}
+\printbibliography[heading=none]{}
 \end{document}
