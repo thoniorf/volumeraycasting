@@ -131,7 +131,7 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="0.7"
-     inkscape:cx="192.71593"
+     inkscape:cx="-39.426927"
      inkscape:cy="577.30933"
      inkscape:document-units="mm"
      inkscape:current-layer="layer1"
@@ -140,7 +140,8 @@
      inkscape:window-height="1017"
      inkscape:window-x="-8"
      inkscape:window-y="-8"
-     inkscape:window-maximized="1" />
+     inkscape:window-maximized="1"
+     showguides="false" />
   <metadata
      id="metadata5">
     <rdf:RDF>
@@ -204,14 +205,14 @@
           <text
              id="text1115"
              y="63.460125"
-             x="78.963165"
+             x="77.177231"
              style="font-style:normal;font-weight:normal;font-size:5.64444447px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.26458332"
              xml:space="preserve"><tspan
                style="stroke-width:0.26458332"
                y="63.460125"
-               x="78.963165"
+               x="77.177231"
                id="tspan1113"
-               sodipodi:role="line">BoudingBox setup</tspan></text>
+               sodipodi:role="line">BoundingBox setup</tspan></text>
           <rect
              style="opacity:1;fill:none;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
              id="rect905"
@@ -274,14 +275,14 @@
           <text
              id="text1123"
              y="168.21678"
-             x="71.796173"
+             x="68.80307"
              style="font-style:normal;font-weight:normal;font-size:5.64444447px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.26458332"
              xml:space="preserve"><tspan
                style="stroke-width:0.26458332"
                y="168.21678"
-               x="71.796173"
+               x="68.80307"
                id="tspan1121"
-               sodipodi:role="line">BoudingBox intesection</tspan></text>
+               sodipodi:role="line">BoundingBox intersection</tspan></text>
         </g>
       </g>
       <g
@@ -312,7 +313,7 @@
                y="204.88972"
                x="69.820068"
                id="tspan1125"
-               sodipodi:role="line">Voxels' intesity Sampling</tspan></text>
+               sodipodi:role="line">Voxels' intesity sampling</tspan></text>
         </g>
       </g>
       <g

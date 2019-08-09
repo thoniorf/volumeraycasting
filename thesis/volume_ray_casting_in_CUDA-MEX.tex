@@ -31,11 +31,12 @@
 				frame=single,
 				captionpos=b,
                 keywordstyle=\color{RoyalBlue},
-                morekeywords={mxREAL , mxArray , __global__ , __device__ , __host__, std::, Vector3, Camera, Grid,}
+                morekeywords={mxREAL , mxArray , __global__ , __device__ , __host__, std::, Vector3, Camera, Grid, size_t, }
                 stringstyle=\color{Red},
                 commentstyle=\color{Gray},
                 morecomment=[l][\color{magenta}]{\#},
                 escapechar=@,
+                tabsize=2,
                 #1}}
 {}
 
@@ -812,7 +813,7 @@ The other problem becomes evident when the viewing angle is moved to 45 degree w
 Last but not least disadvantage is the needs of three different sets of slices that requires additional storing memory and a preliminary step of interpolation of the volume.
 
 \paragraph{Volume Ray casting}
-The most known direct volume rendering algorithm is Volume Ray casting,a first version along with an implementation has been proposed by %TODO add proposed%.
+The most known direct volume rendering algorithm is Volume Ray casting,a first version along with an implementation has been proposed by \cite{levoy_1990:5}.
 Levoy introduced Volume ray casting as a ray tracing technique involving volumetric data set that is not surface-based. However, the naming convention is evolved as the time comes, separating the two techniques.
 \linespace
 
@@ -1239,7 +1240,7 @@ Figure \ref{fig:cudacompiler}, shown the NVCC that processes a CUDA program at t
 \subsection{Architecture} 
 This work and actual implementation follows the previous work of Levoy about volume ray tracing, mainly.
 
-Figure \ref{fig:architecture} shows the algorithm architecture with respect to the entire ecosystem and how it interact with other MATLAB programs as well as the relationship with the accelerating CUDA framework. As can be seen, in order to build a broadly available rendering algorithm all the proceed is encapsulated inside a MEX function that will let users to include it inside every other MATLAB program that require a fast effective and real-time volume rendering algorithm, by passing the right required arguments and receiving the resulting output 2-Dimensional image with the projected volumetric input dataset as expected from a volume ray casting algorithm. %TODO cite levoy
+Figure \ref{fig:architecture} shows the algorithm architecture with respect to the entire ecosystem and how it interact with other MATLAB programs as well as the relationship with the accelerating CUDA framework. As can be seen, in order to build a broadly available rendering algorithm all the proceed is encapsulated inside a MEX function that will let users to include it inside every other MATLAB program that require a fast effective and real-time volume rendering algorithm, by passing the right required arguments and receiving the resulting output 2-Dimensional image with the projected volumetric input dataset as expected from a volume ray casting algorithm.\cite{levoy_1988:4}
 
 \begin{figure}[hbtp]
 \centering
@@ -1270,10 +1271,8 @@ The data format is of type integer in the range of $[0,\,(N-1)]$ where $N$ is th
 Except the two volume datasets, all the other arguments must be defined as a MATLAB struct, as it requires a lot of arguments.
 \linespace
 
-The threshold value let users display all voxels with intensity value greater or equal then the threshold, as stated in %TODO cite display of surfaces from volume data
-this produces 3D regions of opaque voxels, where the outermost layer of which is the desired surface.
-The classification procedure employed is this work wouldn't be able to display concentric semitransparent surfaces or object, as reported by Levoy in %TODO cite display of surfaces from volume data
-. To solve this issue, the second volumetric dataset that contains every object of interest in the volume is used along with the opacities array.
+The threshold value let users display all voxels with intensity value greater or equal then the threshold, as stated in \cite{levoy_1988:4} this produces 3D regions of opaque voxels, where the outermost layer of which is the desired surface.
+The classification procedure employed is this work wouldn't be able to display concentric semitransparent surfaces or object, as reported by Levoy in \cite{levoy_1988:4}. To solve this issue, the second volumetric dataset that contains every object of interest in the volume is used along with the opacities array.
 \linespace
 
 The alpha opacities array is used to define the opacities of the object. Indeed, the size of the array $N$ must be equal to the number of objects defined in the second volume. 
@@ -1328,14 +1327,39 @@ There exists two different type of bounding box (Figure \ref{fig:boundingbox}): 
 The AABB bounding box concept in 3-Dimension and in computer graphics, as well as in this work is known under the name of \textit{bounding volume}. It is used to improve the efficiency of geometrical operations by using simple volume to contain more complex objects, as simpler volumes have simpler ways to test for overlap.
 %TODO cite https://en.wikipedia.org/wiki/Bounding_volume
 
-In ray casting, and so in this implementation as well, bounding volumes are used in ray-intersection test. If the ray does not intersect the bounding volume, it cannot intersect the object contained within, allowing trivial rejection.
+In ray casting, and so in this implementation as well, bounding volumes are used in ray-intersection test. If the ray does not intersect the bounding volume, it cannot intersect the object contained within, allowing trivial rejection. Listing \ref{code:gridclass} shows the Grid class that represent the axis-aligned minimum bounding box and the member function \textit{isInsideGrid} that checks the condition if a given triple of indices falls inside the volume boundaries.
+
+\begin{cpp}[caption={Grid class definition.},label=code:gridclass]
+class Grid {
+public:
+	Vector3 bounds[2] = { 0 };
+	Grid(const Vector3 &min, const Vector3 &max) 
+	{
+		bounds[0] = min, bounds[1] = max;
+	}
+	inline
+	bool isInsideGrid(const int&i, const int&j, const int&k) 
+	{
+		return 
+			i > 0 && 
+			j > 0 && 
+			k > 0 && 
+			i < bounds[1].x - 1 &&
+			j < bounds[1].y - 1 && 
+			k < bounds[1].z - 1;
+	}
+	friend 
+	std::ostream& operator<<(std::ostream&s, const Grid&g)
+	{@ $\cdots$ @}
+};
+\end{cpp}
 
 This is one of the first speed-up in the implementation as part of the sequent ray casting and voxels intersections step of the algorithm. The reason is that with \textit{AABB} bounding volume all the multitude of cast rays can trivially checked if they end up inside or outside of volumetric dataset boundaries.
-
+\linespace
 
 Listing \ref{code:gridinit} shows how the bounding box is initialized with respect to the size of the volumetric dataset by means of the \textit{Grid} class, where the first parameter \textit{Vector3(0)} is the origin of the world space and \textit{sizeArray} is the array that stores the volume dimensions and th
 
-\begin{cpp}[caption={Grid class represent the minimum bounding box.},label=code:gridinit]
+\begin{cpp}[caption={Grid object initialization.},label=code:gridinit]
 Grid grid(Vector3(0), 
 	Vector3(sizeArray[0], sizeArray[1], sizeArray[2])
 	);
@@ -1424,7 +1448,7 @@ void setupLookAtMatrix() {
 	backward = from - to;
 	backward = rotationM.DirMatrixMulti(backward);
 	from = to + backward;
-	Vector3 tmp = rotationM.DirMatrixMulti(Vector3(0, 1, 0));
+	Vector3 tmp = rotationM.DirMatrixMulti(Vector3(0,1,0));
 	forward = (to - from).normalize();
 	right = tmp.cross(forward);
 	up = forward.cross(right);
@@ -1436,6 +1460,137 @@ void setupLookAtMatrix() {
 }
 \end{cpp}
 
+\paragraph{Ray casting} Ray casting is the next phase of the algorithm. As described by Levoy in his work \cite{levoy_1990:5} it is a central part of the procedure, because the entire idea behind the volume ray casting  technique is casting rays.
+
+First of all, the number of rays to be cast must be decided and this number depends on the final output image resolution express in terms of $width \times height$, where \textit{width} and \textit{height} represent the number of pixels.
+As already explained, for each pixel a ray will be cast toward the volume., Listing \ref{code:rayloop} shows and excerpt of the main loop in which are defined and initialized new rays, one for each pixel of the final image.
+
+\begin{cpp}[caption={Main loop in which a ray is created for each output image pixel, and which origin point is transformed from screen space $(w,h)$ to world space coordinates $(x_{1},y_{1},z_{1})$.},label=code:rayloop]
+for (size_t h = 0; h < options.imageHeight; ++h) {
+	for (size_t w = 0; w < options.imageWidth; ++w) {
+		for (size_t iObj = 0; iObj < visibleObjSize; ++iObj) {
+			double x = w - halfWidth;
+			double y = h - halfHeight;
+
+			Vector3 rayStart = camera.lookAt
+									.VecMatrixMulti(Vector3(x,y,0));
+			Vector3 rayEnd = camera.lookAt
+									.VecMatrixMulti(Vector3(x,y,1));
+
+			Ray ray(rayStart, rayEnd);
+			@ $\cdots$ @
+		}
+	}
+}
+			
+\end{cpp}
+
+As can be seen, there are two grafted loops that goes over the image height and width whom values are store in \textit{imageHeight} and \textit{imageWidth} respectively. Inside, can be seen that the 2-Dimensional point from which a ray is originated $(w,h)$ in the image space is transformed in a 3-Dimensional point in world space with respect to the camera position and orientation by means of a multiplication between the Vector3 center of the ray $(x,y,0)$, stored inside \textit{rayStart}, and the \textit{lookAt } matrix of the camera. The same operations is performed to calculate a dummy ray's end point which is only used to calculated the correct direction of the ray, as this end point \textit{rayEnd}, $(x,y,1)$, is also expressed in world space with respect to the camera.
+\linespace
+
+The last important aspect of this excerpt is the difference with the original work \cite{levoy_1990:5}. Instead of only two grafted loops, that go over the image dimensions, there is also an additional loop that goes over the number of visible objects whom are defined by the second Mex function volume argument. By means of this additional loop an additional ray in cast for every visible distinct visible object, that has the same origin and direction of every other rays originated from the same image pixel. Listing \ref{code:visibleObjSize} shows how this single precision dimension is computed with respect to the number of objects whom visibility expressed as opacity in the Mex input argument \textit{alphaArray} is greater then zero, which means that every other objects, even if defined inside the volumetric dataset that holds the objects data, with opacity zero will be discarded and computation time and power will be saved as those objects are not visible at all.
+
+\begin{cpp}[caption={Computation of the number of visible objects concerning the defined elements of the alphaArray with opacity greater than zero},label=code:visibleObjSize]
+if (numberOfObjects > 0) {
+	for (int j = 0; j < alphaSize; ++j) {
+		if (alphaArray[j] > 0.0) {
+			options.visibleObjectsSize++;
+		}
+	}
+} else {
+	options.visibleObjectsSize = 1;
+}
+\end{cpp}
+
+\paragraph{Bounding box intersection} The next step of this algorithm is another fundamental part of the work \cite{levoy_1990:5}, the bounding box intersection.
+
+
+In order to keep with the promise of a fast and effective ray casting, the function proposed is an implementation of the work of Amy Williams et al \cite{Williams:2005} \textit{"An efficient and robust ray-box intersection algorithm."} in which it is explained one of the state-of-the-art routine about ray-box intersections that uses IEEE numerical properties for robustness, which is usually one of the computational bottle necks of ray casting using axis-aligned bounding box intersections. \cite{Williams:2005}
+
+\cite{Williams:2005} it is indeed an improved version of Smits' \cite{Smits:1998}
+which uses directly ray direction instead of the inversion of the ray direction as reported in Williams et al. works \cite{Williams:2005} and shown in Listing \ref{code:intersection}. This subtle change actually exploit the properties of the floating point IEEE standard \cite{IEEE:30711} to avoid some explicit tests. 
+\linespace
+ 
+The problem of the original version from Smits was that those if statements checking the ray directions x,y, and z whom values would be $-0.0$ the resulting interval would be incorrect. 
+
+The reason is that for the IEEE floating point standard $-0 == 0$ is \emph{true}. Therefore, instead of the resulting interval being $(-\infty, +\infty)$, it will be the degenerate $(+\infty,-\infty)$. When such interval is obtained the functions will fail on detecting a valid intersection.
+
+Then, the solution proposed by Williams et al. \cite{Williams:2005} is to substitute the ray direction in the if statements with the inverse of the latter, paying attention to storing those inverse values before by pre-computing them, otherwise it would degrade the efficiency of the algorithm since the direction inverse must always be recomputed.  
+
+\begin{cpp}[caption={Ray-box intersection checking function that also return the points in space along the ray of intersection.},label=code:intersection]
+bool computeRayAABBoxIntersection(const Ray& ray, 
+		double& tmin, double& tmax, const Grid& grid) {
+	double  tminy, tmaxy, tminz, tmaxz;
+
+	if (ray.invDir.x >= 0) {
+		tmin = (grid.bounds[0].x - ray.orig.x) * ray.invDir.x;
+		tmax = (grid.bounds[1].x - ray.orig.x) * ray.invDir.x;
+	}
+	else {
+		tmax = (grid.bounds[0].x - ray.orig.x) * ray.invDir.x;
+		tmin = (grid.bounds[1].x - ray.orig.x) * ray.invDir.x;
+	}
+
+	if (ray.invDir.y >= 0) {
+		tminy = (grid.bounds[0].y - ray.orig.y) * ray.invDir.y;
+		tmaxy = (grid.bounds[1].y - ray.orig.y) * ray.invDir.y;
+	}
+	else {
+		tmaxy = (grid.bounds[0].y - ray.orig.y) * ray.invDir.y;
+		tminy = (grid.bounds[1].y - ray.orig.y) * ray.invDir.y;
+	}
+
+	if (tmin > tmaxy || tminy > tmax) return false;
+
+	if (tminy > tmin) tmin = tminy;
+	if (tmaxy < tmax) tmax = tmaxy;
+
+	if (ray.invDir.z >= 0) {
+		tminz = (grid.bounds[0].z - ray.orig.z) * ray.invDir.z;
+		tmaxz = (grid.bounds[1].z - ray.orig.z) * ray.invDir.z;
+	}
+	else {
+		tmaxz = (grid.bounds[0].z - ray.orig.z) * ray.invDir.z;
+		tminz = (grid.bounds[1].z - ray.orig.z) * ray.invDir.z;
+	}
+
+	if (tmin > tmaxz || tminz > tmax) return false;
+
+	if (tminz > tmin) tmin = tminz;
+	if (tmaxz < tmax) tmax = tmaxz;
+
+	return true;
+}
+\end{cpp}
+
+As can be seen, the procedure checks for each ray dimension x,y and z the inverse of the direction if it is greater of equal to zero, and then it computes the entering and the exiting point on the ray that intersect with the bounding volume with respect to a specific dimension.
+%TODO finire di descrivere tmin e tmax, i parametri
+
+\begin{cpp}[caption={Ray casting main loop enriched with ray-box intersection checking statement and ray starting and ending points},label=code:mainloopintersection]
+for (size_t h = 0; h < options.imageHeight; ++h) {
+	for (size_t w = 0; w < options.imageWidth; ++w) {
+		for (size_t iObj = 0; iObj < visibleObjSize; ++iObj) {
+			double x = w - halfWidth;
+			double y = h - halfHeight;
+
+			Vector3 rayStart = camera.lookAt
+						.VecMatrixMulti(Vector3(x, y, 0));
+			Vector3 rayEnd = camera.lookAt
+						.VecMatrixMulti(Vector3(x, y, 1));
+
+			Ray ray(rayStart, rayEnd);
+
+			if (computeRayABBoxIntersection(ray, tmin, tmax, grid)) {
+				Vector3 start = ray.orig + ray.dir *tmin;
+				Vector3 end = ray.orig + ray.dir *tmax;
+				
+				@ $\cdots$ @
+			}
+			@ $\cdots$ @
+		}
+	}
+}
+\end{cpp}
 \subsection{Parallelize with CUDA} 
 \section{Conclusions} 
 \subsection{Rendering results} 
