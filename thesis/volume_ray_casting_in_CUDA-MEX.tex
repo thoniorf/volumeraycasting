@@ -1341,9 +1341,9 @@ public:
 	bool isInsideGrid(const int&i, const int&j, const int&k) 
 	{
 		return 
-			i > 0 && 
-			j > 0 && 
-			k > 0 && 
+			i > bounds[0].x && 
+			j > bounds[0].y && 
+			k > bounds[0].z && 
 			i < bounds[1].x - 1 &&
 			j < bounds[1].y - 1 && 
 			k < bounds[1].z - 1;
@@ -1504,18 +1504,58 @@ if (numberOfObjects > 0) {
 
 \paragraph{Bounding box intersection} The next step of this algorithm is another fundamental part of the work \cite{levoy_1990:5}, the bounding box intersection.
 
+First of all, it is important to formalize the ray definition. A ray is indeed a straight line defined by the following analytical equation, where big $O$ corresponds to the origin of the ray, big $D$ corresponds to its direction and $t$ can be any real (negative, positive or zero) real value which define a single point along the ray itself.
 
-In order to keep with the promise of a fast and effective ray casting, the function proposed is an implementation of the work of Amy Williams et al \cite{Williams:2005} \textit{"An efficient and robust ray-box intersection algorithm."} in which it is explained one of the state-of-the-art routine about ray-box intersections that uses IEEE numerical properties for robustness, which is usually one of the computational bottle necks of ray casting using axis-aligned bounding box intersections. \cite{Williams:2005}
+\[
+y = O +Dt
+\]
 
-\cite{Williams:2005} it is indeed an improved version of Smits' \cite{Smits:1998}
-which uses directly ray direction instead of the inversion of the ray direction as reported in Williams et al. works \cite{Williams:2005} and shown in Listing \ref{code:intersection}. This subtle change actually exploit the properties of the floating point IEEE standard \cite{IEEE:30711} to avoid some explicit tests. 
+Another components of this algorithm that can be expressed by a similar formula are the box bounds of the axis-aligned bounding box,  as they are defined as a set of parallel lines to each axis of the coordinate system, where $bounds0_{x}$ correspond to \textit{bounds[0].x} and so on for every axis as follows:
+
+\[
+y = bounds0_{x}
+\] 
+
+Therefore, it is trivial that in order to find the intersection point of the ray with one the box bounds lines, the ray analytical equation must be reordered and expressed as follows:
+
+\[
+tmin_{x}\,=\,(bounds0_{x} - O_{x})\,/\,D_{x}
+\] 
+
+Where $tmin_{x}$ is the point where the ray and the bounding volume defined lines intersect, $bounds0_{x}$ is the x component of the bounding volume's minimum extent, $O_{x}$ and $D_{x}$ are the x component of the origin and the direction of the ray, respectively. The same formula can be used to compute the intersection point $tmax_{x}$ and the x component of the bounding volume's maximum extent, as well as for the other axis. Figure \ref{fig:intersectingpoints} show an example in 2-Dimension.
+
+\begin{figure}[hbtp]
+\centering
+\includegraphics[scale=1]{images/intersectingpoints.png}
+\caption{2-Dimension example of ray-box intersection.}
+\label{fig:intersectingpoints}
+\end{figure}
+
+
+Next step is to find out which\textit{t-values} lies on the volume between all axis, and find if the ray intersects with volume Mathematically it can be find by comparing their values choosing the point which value for t is the greatest for the volume's minimum extent and choosing the point which value for t is the smallest for the maximum extent, as follows:
+
+\[
+tmin\, =\, (tmin_{x} > tmin_{y})\, ?\, tmin_{x} \,:\, tmin_{y} 
+\]
+
+\[
+tmax\, =\, (tmax_{x} < tmax_{y}) ? tmax_{x} \,:\, tmax_{y} 
+\]
+
+
+Listing \ref{code:intersection} shows the intersection checking procedure. For each ray dimension x,y and z two values are computed corresponding to intersection points on the box boundaries. Those values must be compared between each other, as explained above, to find out if the ray actual intersect with the box, always storing the farthest \textit{tmin} value and the closest \textit{tmax}.
+However, as can be seen, additional statements are present in the excerpt to handle a few cases of non-intersection which were missing before, as shown in Figure \ref{fig:intersectionmissing}.
 \linespace
- 
-The problem of the original version from Smits was that those if statements checking the ray directions x,y, and z whom values would be $-0.0$ the resulting interval would be incorrect. 
 
-The reason is that for the IEEE floating point standard $-0 == 0$ is \emph{true}. Therefore, instead of the resulting interval being $(-\infty, +\infty)$, it will be the degenerate $(+\infty,-\infty)$. When such interval is obtained the functions will fail on detecting a valid intersection.
+\begin{figure}[hbtp]
+\centering
+\includegraphics[scale=1]{images/intersectingmissing.png}
+\caption{Ray-box non-intersecting cases.}
+\label{fig:intersectionmissing}
+\end{figure}
 
-Then, the solution proposed by Williams et al. \cite{Williams:2005} is to substitute the ray direction in the if statements with the inverse of the latter, paying attention to storing those inverse values before by pre-computing them, otherwise it would degrade the efficiency of the algorithm since the direction inverse must always be recomputed.  
+
+Last, to compute the correct interval of \textit{tmin} and \textit{tmax} the ray direction inverse is tested to be greater or equal to zero. This proposed function follows the work of Amy Williams et al \cite{Williams:2005}, that is one of the state-of-the-art ray-box intersection routine that uses IEEE numerical properties for robustness, which is usually one of the computational bottle necks of ray casting using axis-aligned bounding box, that has been chosen to contribute to the fastness and effectiveness of this ray casting algorithm.
 
 \begin{cpp}[caption={Ray-box intersection checking function that also return the points in space along the ray of intersection.},label=code:intersection]
 bool computeRayAABBoxIntersection(const Ray& ray, 
@@ -1563,8 +1603,21 @@ bool computeRayAABBoxIntersection(const Ray& ray,
 }
 \end{cpp}
 
-As can be seen, the procedure checks for each ray dimension x,y and z the inverse of the direction if it is greater of equal to zero, and then it computes the entering and the exiting point on the ray that intersect with the bounding volume with respect to a specific dimension.
-%TODO finire di descrivere tmin e tmax, i parametri
+
+\cite{Williams:2005} it is indeed an improved version of Smits' \cite{Smits:1998}
+which uses directly ray direction instead of the inversion of the ray direction as reported in Williams et al. works \cite{Williams:2005}. This subtle change actually exploit the properties of the floating point IEEE standard \cite{IEEE:30711} to avoid some explicit tests. 
+\linespace
+
+The problem of the original version from Smits was that those if statements checking the ray directions x,y, and z whom values would be $-0.0$ the resulting interval would be incorrect. The reason is that for the IEEE floating point standard $-0 == 0$ is \emph{true}. Therefore, instead of the resulting interval being $(-\infty, +\infty)$, it will be the degenerate $(+\infty,-\infty)$. When such interval is obtained the functions will fail on detecting a valid intersection.
+\linespace
+
+Then, the solution proposed by Williams et al. \cite{Williams:2005} is to substitute the ray direction in the if statements with the its inverse, paying attention to storing those inverse values before by pre-computing them, otherwise it would degrade the efficiency of the algorithm since the direction inverse must always be recomputed. 
+\linespace 
+
+Listing \ref{code:mainloopintersection} reiterate the main loop, although with the addition of the ray-box intersection function call which require as input argument the ray itself, the two values \textit{tmin} and \textit{tmax} and the bounding volume. As output, it returns a boolean which value corresponds to a successful ray-box intersection if \emph{true} or to a miss, if equal to \emph{false}, that means the cast ray is outside of the volume.
+
+The procedure also fills the two values \textit{tmin} and \textit{tmax}, which is used to compute the actual 3-Dimensional intersection points that define the starting and the ending point of the ray's line segment, respectively, in world space coordinates.
+This line segment is used to classify voxels' intensity, as explained in the next paragraph.
 
 \begin{cpp}[caption={Ray casting main loop enriched with ray-box intersection checking statement and ray starting and ending points},label=code:mainloopintersection]
 for (size_t h = 0; h < options.imageHeight; ++h) {
@@ -1591,6 +1644,27 @@ for (size_t h = 0; h < options.imageHeight; ++h) {
 	}
 }
 \end{cpp}
+\paragraph{Voxels' intensity classification} Classification of the voxels intensity value is the next essential rung in volume ray casting techniques. As illustrated by Levoy in his work \cite{levoy_1990:5}, a quick classification method is to sample voxel intensities over the intersecting portion of the ray at regular step.
+
+
+Figure \ref{fig:segmentclassify} shows the aforementioned procedure with respect to actual implementation, where the intersecting part of the ray is defined by the \textit{start} and \textit{end} 3-Dimensional points.
+The constant step used is defined by the variable \textit{littleStep}, while the maximum value used as stopping condition of the loop that goes over the ray line segment is computed as length of the space diagonal\footnote{In geometry a space diagonal (also interior diagonal or body diagonal) of a polyhedron is a line connecting two vertices that are not on the same face.\cite{space_diagonal:6}} of the volume, calculated by means of the Pythagorean theorem as follows:  
+
+\begin{cpp}[caption={Computed volume's space diagonal by means of the \textit{"Pythagorean formula"}, where \textit{sizeArray} is an array storing the volume sizes in each 3-Dimensional dimension.}]
+double maxStep = std::sqrt(
+						sizeArray[0]*sizeArray[0]+ // x
+						sizeArray[1]*sizeArray[1]+ // y
+						sizeArray[2]*sizeArray[2]  // z
+						);
+\end{cpp}
+
+\begin{figure}[hbtp]
+\centering
+\includegraphics[scale=1]{images/classification.png}
+\caption{Voxels' intensity classification at constant step over ray line segment defined by \textit{start} and \textit{end} points.}
+\label{fig:segmentclassify}
+\end{figure}
+
 \subsection{Parallelize with CUDA} 
 \section{Conclusions} 
 \subsection{Rendering results} 
