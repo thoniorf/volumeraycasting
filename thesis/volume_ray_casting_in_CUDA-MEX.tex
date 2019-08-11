@@ -868,7 +868,7 @@ however as already seen in the color space chapter there exists different and mo
 \linespace
 
 In order to compose such values there exists different operators that can be applied. The most common one is the over operator proposed by Porter%cite porter
-because it is also capable of dealing and preserving semi-transparency voxels values according to their opacity. More of these operators are describe in the Composition schemas section.
+ because it is also capable of dealing and preserving semi-transparency voxels values according to their opacity. More of these operators are describe in the Composition schemas section.
 \linespace
 
 There are two ways of compositing, back-to-front and front-to-back. They both have their pros and cons: back-to-front is the most simple method, however it is also the most expensive one in terms of computational requirements,because it doesn't allows any kind of optimization as all the voxels, from the least visible to the closest and visible one, must be accounted.
@@ -1747,21 +1747,26 @@ A gradient of a function, at a point in Cartesian coordinates, is a vector which
 
 A correct shadowing phase is fundamental for the correct display of the volume. To ensure good quality approximation Blinn-Phong illumination model has been employed. As already described, the Blinn-Phong reflection model equation works as follows:
 \[
-I = k_{a} i_{a} + \sum_{m \in Lights} (k_{d}(L_{m} \cdot N)i_{m,d} +k_{s}(R_{m} \cdot V)^{\alpha}i_{m,s})
+I = k_{a} i_{a} + \sum_{m \in Lights} (k_{d}(L_{m} \cdot N)i_{m,d} +k_{s}(N \cdot H)^{\alpha}i_{m,s})
 \]
 
-The only difference is that no surfaces are involved, in computer graphics word strict sense. Now, is where the gradient comes in handy once again, as it is used to compute the normal vector of the sampled voxel much as a computed normal of a surface at a specified point.
+The only difference is that no surfaces are involved. Therefore the gradient is used to compute the sampled voxel's normal vector much as the computed normal of a surface at a specified point.
 \linespace
 
-Listing \ref{code:shadowing} shows how the reflections are computed. Starting from the function call that computer the voxel's gradient \textit{getGradient} and how it is transformed to be used as the normal in the Blinn-Phong formula.
+Listing \ref{code:shadowing} shows how reflections are computed. Starting from the function call that computer the voxel's gradient \textit{getGradient} and how it is transformed and used as the normal in the Blinn-Phong formula. Then, following the previous formula the Blinn halfway vector is computed and then used in dot product with the normal. All the material-specific parameters $k_{a}$, $k_{d}$ and $k_{s}$ are fixed to 1 and therefore excluded from the formula. A specular weight is then added to the original formula to give users the power to control the ratio between a full diffuse or a full specular look.
+\linespace
+
+Last, to preserve the selected color argument associated with the specified object, the RGB color space used in the calculation of the shadow is switched with the YUV color space, because colors in YUV have the advantage that color brightness is stored separately from the actual color values which are encoded in the two chrominance values.
+
+Therefore, by means of the conversion matrix from RGB to YUV the original diffuse color and the resulting illuminated color are converted to the new color space. Then, a new color is stored inside \textit{yuvIllumination} variable where the two chrominance values are obtained from converted diffuse color \textit{yuvColor} and the luminance value is the luminance value of the converted illuminated color. 
+
+Finally, the resulting \textit{yuIllumination} is converted back to RGB using YUV to RGB conversion matrix.
 
 \begin{cpp}[caption={Blinn-Phong reflection computation using voxel's gradient as surface normal and colors in YUV space to preserve selected input color but not luminosity},label=code:shadowing]
 Vector3 grad = getGradient(ix, iy, iz, volume, sizeArray);
 Vector3 normal = -grad / std::sqrt(grad.norm());
 
 Vector3 lightDir = camera.from.normalize();
-double distance = lightPosition.length();
-double lambertian = lightDir.dot(normal);
 
 Vector3 viewDir = rayStart.normalize();
 Vector3 halfDir = (lightDir + viewDir).normalize();
@@ -1771,7 +1776,7 @@ double specular = std::pow(specAngle, shininess);
 
 diffuseColor = colors.getColorByIndex(visibleObj[iObj]);
 
-Vector3 IlluminationI = ambientColor + diffuseColor*lambertian* 
+Vector3 IlluminationI = ambientColor + diffuseColor* 
 specularity + specularColor*specular*(1 - specularity);
 //convert to yuv
 Vector3 yuvIllumination = rgbToYuv.
@@ -1786,7 +1791,57 @@ yuvIllumination.z = yuvDiffuse.z;
 IlluminationI = yuvToRgb.ColMajMatrixMulti(yuvIllumination);
 \end{cpp}
 
+\paragraph{Compositing} The last step of the ray cast algorithm is composing sampled values after shadows computation back to image pixels, to project the volume into a 2-Dimensional output image finally.
+
+In the end, every cast ray has a stored color which refers to a specific image pixel. However, for each pixel, more than one ray is cast due to the introduction of objects.
+\linespace
+
+Therefore, Listing \ref{code:compositing} shows the main loop that goes over the image pixel and volume's visible objects. Each color component is added to the output view defined as a double-precision matrix of non-complex MATLAB \textit{mxArray} of size $width\times height$. 
+
+Those values are composed using the over operator proposed by Porter which preserve objects semi-transparency defined by \textit{visibleAlpha} array, which stores objects' opacity. 
+
+\begin{cpp}[caption={Composing illuminated colors back into output image, preserving objects semi-transparency using Porter's over operator},label=code:compositing]
+mwSize frameDimensions[3]={ 
+	options.imageWidth,
+	options.imageHeight,
+	3
+};
+plhs[0] = mxCreateNumericArray(3, 
+	frameDimensions, 
+	mxDOUBLE_CLASS, 
+	mxREAL
+);
+mxDouble* viewOutput = mxGetPr(plhs[0]);
+
+@ $\cdots$ @
+
+for (size_t h = 0; h < options.imageHeight; ++h) {
+	for (size_t w = 0; w < options.imageWidth; ++w) {
+		for (size_t iObj = 0; iObj < visibleObj.size(); ++iObj) {
+
+			@ $\cdots$ @
+
+			viewOutput[i] += visibleAlpha[iObj] * IlluminationI.x;
+			
+			viewOutput[i+options.imageDimension] += 
+				visibleAlpha[iObj] * IlluminationI.y;
+			
+			viewOutput[i+options.imageDimension*2] += 
+				visibleAlpha[iObj] * IlluminationI.z;			
+		}
+	}
+}
+\end{cpp}
+\pagebreak
 \subsection{Parallelize with CUDA} 
+%intro
+%MATLAB gpu array
+%raycast kernel function
+%% linear index using thead id
+%% pixel per gpu thead image and description
+
+%kernel parameter definition
+
 \section{Conclusions} 
 \subsection{Rendering results} 
 \subsection{Results comparisons} 
