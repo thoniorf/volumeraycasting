@@ -1502,7 +1502,7 @@ if (numberOfObjects > 0) {
 }
 \end{cpp}
 
-\paragraph{Bounding box intersection} The next step of this algorithm is another fundamental part of the work \cite{levoy_1990:5}, the bounding box intersection.
+\paragraph{Bounding box intersection} The next step of this algorithm is another fundamental part of the work\cite{levoy_1988:4}, the bounding box intersection.
 
 First of all, it is important to formalize the ray definition. A ray is indeed a straight line defined by the following analytical equation, where big $O$ corresponds to the origin of the ray, big $D$ corresponds to its direction and $t$ can be any real (negative, positive or zero) real value which define a single point along the ray itself.
 
@@ -1644,13 +1644,13 @@ for (size_t h = 0; h < options.imageHeight; ++h) {
 	}
 }
 \end{cpp}
-\paragraph{Voxels' intensity classification} Classification of the voxels intensity value is the next essential rung in volume ray casting techniques. As illustrated by Levoy in his work \cite{levoy_1990:5}, a quick classification method is to sample voxel intensities over the intersecting portion of the ray at regular step.
+\paragraph{Voxels' intensity classification} Classification of the voxels intensity value is the next essential rung in volume ray casting techniques. As illustrated by Levoy in his work \cite{levoy_1988:4}, a quick classification method is to sample voxel intensities over the intersecting portion of the ray at regular step.
 
 
 Figure \ref{fig:segmentclassify} shows the aforementioned procedure with respect to actual implementation, where the intersecting part of the ray is defined by the \textit{start} and \textit{end} 3-Dimensional points.
-The constant step used is defined by the variable \textit{littleStep}, while the maximum value used as stopping condition of the loop that goes over the ray line segment is computed as length of the space diagonal\footnote{In geometry a space diagonal (also interior diagonal or body diagonal) of a polyhedron is a line connecting two vertices that are not on the same face.\cite{space_diagonal:6}} of the volume, calculated by means of the Pythagorean theorem as follows:  
+The constant step used is defined by the variable \textit{littleStep}, while the maximum value used as stopping condition of the loop that goes over the ray line segment is computed as the length of the space diagonal\footnote{In geometry a space diagonal (also interior diagonal or body diagonal) of a polyhedron is a line connecting two vertices that are not on the same face.\cite{space_diagonal:6}} of the volume, calculated by means of the Pythagorean theorem (Listing \ref{code:maxstep}.
 
-\begin{cpp}[caption={Computed volume's space diagonal by means of the \textit{"Pythagorean formula"}, where \textit{sizeArray} is an array storing the volume sizes in each 3-Dimensional dimension.}]
+\begin{cpp}[caption={Computed volume's space diagonal by means of the \textit{"Pythagorean formula"}, where \textit{sizeArray} is an array storing the volume sizes in each 3-Dimensional dimension.},label=code:maxstep]
 double maxStep = std::sqrt(
 						sizeArray[0]*sizeArray[0]+ // x
 						sizeArray[1]*sizeArray[1]+ // y
@@ -1664,6 +1664,127 @@ double maxStep = std::sqrt(
 \caption{Voxels' intensity classification at constant step over ray line segment defined by \textit{start} and \textit{end} points.}
 \label{fig:segmentclassify}
 \end{figure}
+
+Listing \ref{code:classification} shows the classification loop with constant step. It also shows how the voxel is picked from the volume with respect to MATLAB way of the in-memory array storing method, that requires to create a linear index to access volume's elements. It computes the correct indices from the 3-Dimensional starting point components while checking if they fall inside the volume boundaries with the first if statement.
+
+Another important aspect is the presence of the intensity threshold test, that screens voxels which intensity falls below the fixed value stored in \textit{options.threshold} variable.
+
+Last, the introduction of the volume of objects, along with the threshold test, an additional condition must be satisfied, which assure that the correct voxel is being sampled with respect to the belonging visible object. Otherwise, it would prevent the rendering of semi-transparent concentric surfaces in the correct order.
+ 
+
+\begin{cpp}[caption={Intensities classification loop with threshold test and object-wise classification.},label=code:classification]
+for (size_t t = 0; t < maxStep; t += littleStep) {
+	int ix = std::floor(start.x)>0?std::floor(start.x)-1:0;
+	int iy = std::floor(start.y)>0?std::floor(start.y)-1:0;
+	int iz = std::floor(start.z)>0?std::floor(start.z)-1:0;
+	int linearIndex = ix+iy*sizeArray[0]+
+			iz*(sizeArray[0]*sizeArray[1]);
+		
+	if (grid.isInsideGrid(ix, iy, iz)) {
+		if (volume[linearIndex]>=options.threshold && 
+			(visibleObj[iObj]==-1 || 
+			 objectVolume[linearIndex]==visibleObj[iObj])) {
+		@ $\cdots$ @
+		}
+	}
+}
+\end{cpp}
+
+\paragraph{Compute shadows}
+\cite{levoy_1988:4} described how exactly intensities must be classified beside the step at which are classified.
+One of the problem with ray casting is the image quality strictly related to the number of cast rays used to sample voxels value. In current implementation one ray is cast per pixel and such point sampling usually produce strongly image aliasing.\cite{levoy_1988:4}
+
+Within this limitation, Levoy proposed two solutions: blurring and super-sampling. Slightly blurring the acquired volumetric dataset during data preparation, the sharp silhouettes exhibited by the volume render is softened. However, this approach may reduce aliasing at the expense of resolution, and it may introduce artifacts in the output image.
+
+
+An alternative means is super-sampling. The idea is to interpolate additional samples between the acquired ones prior to compositing, and if the interpolation method is robust enough, the accuracy of the visibility calculations is improved, reducing the aliasing. However, at the cost of increasing computational expenses, this interpolation can be applied during data preparation, which improves the accuracy of shading and classification calculations as well as image quality.
+
+
+Therefore, a component-wise linear interpolation\footnote{In mathematics, linear interpolation is a method of curve fitting using linear polynomials to construct new data points within the range of a discrete set of known data points.} %TODO cite https://en.wikipedia.org/wiki/Linear_interpolation
+ method as been chosen to deal with the aforementioned problem of aliasing, following the suggestions of Levoy, as part of the computing shadows phase.
+\linespace
+
+Listing \ref{code:getgradient} shows the function which implement this interpolation procedure with respect to the sampled voxel value taking into account its neighbourhood on each dimension x,y, and z. The procedure returns a 3-Dimensional vector composed by the linear interpolation of the voxel intensity for each dimension. This 3-Dimensional vector corresponds to the gradient\footnote{In vector calculus, the gradient is a multi-variable generalization of the derivative.[1] Whereas the ordinary derivative of a function of a single variable is a scalar-valued function, the gradient of a function of several variables is a vector-valued function.\cite{gradient:7}} of the voxel. 
+
+\begin{cpp}[caption={Component-wise linear interpolation functions computing voxel gradient},label=code:getgradient]
+Vector3 getGradient(const int& ix, const int& iy, const int& iz, 
+		const mxDouble * volume, const mwSize* size) {
+	// component-wise linear interpolation
+	double a, b, c;
+	int xi = (int)(ix + 0.5);
+	double xT = ix + 0.5 - xi;
+	int linearXi = xi + iy*size[0] + iz*(size[0] * size[1]);
+	int linearXiB = xi+1 + iy*size[0] + iz*(size[0] * size[1]);
+	int linearXib = xi-1 + iy*size[0] + iz*(size[0] * size[1]);
+
+	a = (volume[linearXi] - volume[linearXib]) * (1.0 - xT) + 
+	(volume[linearXiB] - volume[linearXi]) * xT;
+	
+	int yi = (int)(iy + 0.5);
+	double yT = iy + 0.5 - yi;
+	int linearYi = ix + yi*size[0] + iz*(size[0] * size[1]);
+	int linearYiB = ix + (yi+1)*size[0] + iz*(size[0] * size[1]);
+	int linearYib = ix + (yi-1)*size[0] + iz*(size[0] * size[1]);
+	
+	b = (volume[linearYi] - volume[linearYib]) * (1.0 - yT) + 
+	(volume[linearYiB] - volume[linearYi]) * yT;
+	
+	int zi = (int)(iz + 0.5);
+	double zT = iz + 0.5 - zi;
+	int linearZi = ix + iy*size[0] + zi*(size[0] * size[1]);
+	int linearZiB = ix + iy*size[0] + (zi+1)*(size[0] * size[1]);
+	int linearZib = ix + iy*size[0] + (zi-1)*(size[0] * size[1]);
+	
+	c = (volume[linearZi] - volume[linearZib]) * (1.0 - zT) + 
+	(volume[linearZiB] - volume[linearZi]) * zT;
+	
+	return Vector3(a, b, c);
+}
+\end{cpp}
+
+A gradient of a function, at a point in Cartesian coordinates, is a vector which direction points to the biggest change of the function at that point. Therefore, it can be used to represent interpolate voxels intensities.
+\linespace
+
+A correct shadowing phase is fundamental for the correct display of the volume. To ensure good quality approximation Blinn-Phong illumination model has been employed. As already described, the Blinn-Phong reflection model equation works as follows:
+\[
+I = k_{a} i_{a} + \sum_{m \in Lights} (k_{d}(L_{m} \cdot N)i_{m,d} +k_{s}(R_{m} \cdot V)^{\alpha}i_{m,s})
+\]
+
+The only difference is that no surfaces are involved, in computer graphics word strict sense. Now, is where the gradient comes in handy once again, as it is used to compute the normal vector of the sampled voxel much as a computed normal of a surface at a specified point.
+\linespace
+
+Listing \ref{code:shadowing} shows how the reflections are computed. Starting from the function call that computer the voxel's gradient \textit{getGradient} and how it is transformed to be used as the normal in the Blinn-Phong formula.
+
+\begin{cpp}[caption={Blinn-Phong reflection computation using voxel's gradient as surface normal and colors in YUV space to preserve selected input color but not luminosity},label=code:shadowing]
+Vector3 grad = getGradient(ix, iy, iz, volume, sizeArray);
+Vector3 normal = -grad / std::sqrt(grad.norm());
+
+Vector3 lightDir = camera.from.normalize();
+double distance = lightPosition.length();
+double lambertian = lightDir.dot(normal);
+
+Vector3 viewDir = rayStart.normalize();
+Vector3 halfDir = (lightDir + viewDir).normalize();
+
+double specAngle = halfDir.dot(normal);
+double specular = std::pow(specAngle, shininess);
+
+diffuseColor = colors.getColorByIndex(visibleObj[iObj]);
+
+Vector3 IlluminationI = ambientColor + diffuseColor*lambertian* 
+specularity + specularColor*specular*(1 - specularity);
+//convert to yuv
+Vector3 yuvIllumination = rgbToYuv.
+		ColMajMatrixMulti(IlluminationI);
+//get diffuse color in yuv color schema
+Vector3 yuvDiffuse = yuvColors.
+		getColorByIndex(visibleObj[iObj]);
+//reset color
+yuvIllumination.y = yuvDiffuse.y;
+yuvIllumination.z = yuvDiffuse.z;
+//convert back to rgb
+IlluminationI = yuvToRgb.ColMajMatrixMulti(yuvIllumination);
+\end{cpp}
 
 \subsection{Parallelize with CUDA} 
 \section{Conclusions} 
