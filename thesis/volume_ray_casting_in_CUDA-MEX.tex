@@ -1234,7 +1234,7 @@ Figure \ref{fig:cudacompiler}, shown the NVCC that processes a CUDA program at t
 \label{fig:cudacompiler}
 \end{figure}
 
-%TODO add conclusion
+%TODO add conclusion and motivation 
 
 
 \subsection{Architecture} 
@@ -1834,9 +1834,119 @@ for (size_t h = 0; h < options.imageHeight; ++h) {
 \end{cpp}
 \pagebreak
 \subsection{Parallelize with CUDA} 
-%intro
-%MATLAB gpu array
-%raycast kernel function
+The previous section describes the non-parallel version of the algorithm. Instead, in this section, the accelerated version is discussed going through all the changes from the basic version to change from a linear execution to a concurrent execution model. 
+
+The reason for building a version that exploits the power of graphic devices and not of CPUs for concurrent run, is because GPUs are provided with a massive number of units which runs in parallel by design, CPUs, on the other hand, have a few numbers of units and so less power in terms of parallel execution of programs.
+\linespace
+
+First of all, before going deep in the implementation and code excerpts, several system requirements must be fulfilled in order to run C/C++ CUDA instructions inside a Mex function and MATLAB environment:
+\begin{itemize}
+\item CUDA SDK installed.
+\item NVIDIA CUDA-Enabled graphics device provided with such call \textit{"cuda cores"}\footnote{For the full list of CUDA-Enabled NVIDIA devices visit \cite{cudagpus:8}}.
+\item MATLAB version compatible with the CUDA SDK intalled.
+\item C/C++ compiler.
+\end{itemize}
+
+For this work, MATLAB 2019a has been used with the CUDA SDK version 10.0 (not 10.0.1 due to incompatibility issues with MATLAB), and the Microsoft C++ Compiler version is 19.16.
+\linespace
+
+Another aspect of writing software which runs on the GPU architecture while dealing with MATLAB is that MATLAB uses a different representation for array stored inside the graphics device memory.
+
+Therefore, a first translation phase from MATLAB host-targeted code and device-targeted code must be done, to move from MATLAB \textit{mxArray} stored in the system main memory to \textit{gpuArray} stored in GPU's memory. Listing \ref{code:gpuview} shows the first excerpt of modification done, related to the initialization of the output view image, where new GPU-variable are denoted by a \textit{d\_} prefix.
+
+\begin{cpp}[caption={Output view image initialization code differences from mxArray and gpuArray.},label=code:gpuview]
+// previous mxArray creation 
+plhs[0] = mxCreateNumericArray(3, 
+	frameDimensions, 
+	mxDOUBLE_CLASS, 
+	mxREAL
+);
+mxDouble* viewOutput = mxGetPr(plhs[0]);
+
+// gpuArray creation
+mxGPUArray * const  d_viewArray = mxGPUCreateGPUArray(3, 
+	frameDimensions, 
+	mxDOUBLE_CLASS, 
+	mxREAL, 
+	MX_GPU_INITIALIZE_VALUES);
+mxDouble * d_viewOutput = (mxDouble *)mxGPUGetData(d_viewArray);
+plhs[0] = mxGPUCreateMxArrayOnGPU(d_viewArray);
+\end{cpp}
+
+As can be seen, the C/C++ type which allows a MEX function to access elements in a MATLAB \textit{gpuArray} is \textit{mxGPUArray}. With this change of array and matrix representation also the overall structure of Mex fuction needs to be changes, as showed below:
+
+\begin{enumerate}
+\item \textit{mxInitGPU} functions must be called to initialize Mex GPU capability.
+\item Create mxGPUArray objects from the input mxArray arguments, and get pointers to the input elements on the device.
+\item Create mxGPUArray objects to hold the outputs, and get the pointers to the output elements on the device.
+\item Call CUDA kernel 
+\item Wrap the output mxGPUArray as an mxArray for return to MATLAB.
+\item Destroy the mxGPUArray objects you created.
+\end{enumerate}
+
+The second and third steps have been already shown in the previous excerpt. What is described next is the fourth one related to CUDA kernels parameters set-up and functions call, that starts the execution on GPU's threads grid.
+\linespace
+
+Listing \ref{code:kernelraycast} shows the CUDA kernel function call and parameters set-up. As already explained, kernel functions are a special kind of procedures which are executed on the GPU and called from host code. Kernel's parameters that must be set: the number of thread blocks in the device's grid and the number of threads in each block. 
+
+Note that, to ensure enough thread to cover our data a configuration of $256$ threads per block has been set, while applying the \textit{ceil} C function to $imageDimension/256.0$ which will launch a kernel with a number of threads blocks proportional to the number of data elements, rounded to the smallest integer value not smaller than the fixed value.
+
+\begin{cpp}[label=code:kernelraycast]
+raycasting<<<std::ceil(options.imageDimension/256.0), 256 >>>( 
+	input arguments @ $\cdots$ @
+	);	
+\end{cpp}
+
+CUDA broadly follows the data-parallel model of computation, where typically each thread executes the same operation on different elements of the data in parallel. Therefore, another critical thing to do is to define which data should be used and how it can be accessed in parallel.
+
+In this implementation, due to volume ray casting procedure structure, the most straight forward choice should be the output viewing image, which means choosing the matrix that holds the pixels value and from which rays are generated, already defined in kernel parameters, where \textit{imageDimension} is equal to the product between the image width and image height.
+
+\begin{figure}[hbtp]
+\centering
+\includegraphics[scale=1]{images/imagetogrid.png}
+\caption{Image pixel to GPU's thread correlation}
+\label{fig:imagetogrid}
+\end{figure}
+
+Figure \ref{fig:imagetogrid} illustrate the correlation between the output image pixel and the GPU's threads, where each pixel of the viewing image is correlated to a thread. 
+
+Therefore, as for every pixel a ray is created, a thread duty is to execute all the volume ray casting proceed: volume traversing of ray, voxels intensity sampled, shadows calculation and image composing for a single pixel.
+In this way, the most computationally expensive part of the algorithm is executed in parallel on the device threads.
+\linespace
+
+Result of this choice, with respect to source code and asymptotic complexity, is that the main loop that goes over the image size disappear and the grid of threads replaces it. The entire grid forms the equivalent of the loop, where each thread corresponds to one iteration of the original loop. 
+
+Identify a pixel it is not possible using 2-Dimensional indexing syntax $(w,h)$ anymore.
+
+Listing \ref{code:allkernel} shows part of the kernel function defined by the prefix keyword \textit{\_\_global\_\_}. The original code isn't changed much (and so excluded), except for the missing loop and the introduction of the linearised image view matrix which new identifier \textit{i} is computed using CUDA built-in threads and blocks identifiers.  
+
+\begin{cpp}[caption={Ray cast kernel function excerpt with linearised view matrix and index},label=code:allkernel]
+__global__
+void raycasting(mxDouble * viewOutput, 
+	mxDouble const * const volume, 
+	mxDouble const * const objectVolume,
+	mwSize const * const size, int const * const visibleObj,
+	double const *const visibleAlpha,
+	Options options, Matrix4x4 lookAt, Vector3 from, 
+	Vector3 lightPosition, Vector3 ambientColor,
+	Vector3 specularColor, double shininess, double specularity,
+	Color colors, YuvColor yuvColors, Matrix4x4 rgbToYuv, 
+	Matrix4x4 yuvToRgb, Grid grid, size_t maxStep) {
+
+Vector3 diffuseColor(0.5, 0.5, 0.5);
+double littleStep = 1;
+double tmin, tmax;
+int const i = blockDim.x * blockIdx.x + threadIdx.x;
+if (i < options.imageDimension) {
+	int x = (i % options.imageWidth)-options.imageWidth/2;
+	int y = (i / options.imageWidth)-options.imageHeight/2;
+	
+	@ $\cdots$ @
+return;
+}
+\end{cpp}
+
+ 
 %% linear index using thead id
 %% pixel per gpu thead image and description
 
