@@ -1945,19 +1945,96 @@ if (i < options.imageDimension) {
 return;
 }
 \end{cpp}
-
- 
-%% linear index using thead id
-%% pixel per gpu thead image and description
-
-%kernel parameter definition
-
+\pagebreak
 \section{Conclusions} 
+In this work, a volume rendering algorithm has been presented and explained. Starting from the original work \cite{levoy_1988:4} about a volume ray casting pipeline, a first basic implementation has been developed and illustrated. 
+
+Afterward, a more efficient version has been built exploiting modern graphics devices parallel computations to achieve a fast and efficient algorithm capable of real-time user interaction and large dataset rendering.
+\linespace
+
+In order to provide an extensible open algorithm that is also broadly available to other academic researches, the procedure has been presented inside MATLAB environment by an open prototype.
+
+This prototype lets users render volumetric dataset and by means of a graphic interface interact with it. Therefore, the original C++ code composed of CUDA device code to take advantage of GPU parallel execution has been interwoven with MATLAB Mex API, obtaining a Mex function, written in C++, which behave as the interface between the C++ volume rendering procedure and MATLAB.
+\linespace
+
+The system on which the prototype has been tested and on which rendering results are gathered is provided with the followings: NVIDIA GeForce GTX 1050 graphic device with $640$ Cuda cores, a dedicated memory of $4096\,MB\,DDR5$ and a memory bandwidth of $112.13\,GB/s$, along with an central process Intel(R) Core(TM) $i7-7700HQ$ at $2.80\,GHz$ and $15.9GB$ of available RAM. 
 \subsection{Rendering results} 
+%ct_head 185 x 211 x 207 , 7objs
+% 250x 250
+The first volume used to test the procedure is a CT study of  a human head of size $186\,x\,211\,x\,207$. Figure \ref{fig:cubic_ct_head} shows the prototype interface with rotation controls (Up, Down, Left and Right direction) to interact with the volume and the projection of the sampled values with a threshold of $91$, which can be set using the bottom sliding bar. The output image size is set to $ 250\,x\,250$. Note that the image appears to be stretched on the vertical axis. The reason is because of the fixed MATLAB rendering viewport, which displays the output image.
+
+\begin{figure}[hbtp]
+\centering
+\includegraphics[scale=0.5]{images/results/cubic_ct_head_1.png}
+\caption{Rendered CT head inside prototype interface.}
+\label{fig:cubic_ct_head}
+\end{figure}
+
+\linespace
+
+Figure \ref{fig:ct} shows the same volumetric dataset in four panels, where different visualization parameters are modified. Top left volume is identical to the one above. The top right panel shows the projected image of the volume while the threshold value is $146$, which exclude all skins and other isovalues below the threshold. Bottom left, and right panels display the volume with the addition of the second volume holding objects definition. The CT head dataset objects volume hold a total of seven objects, which are made visible or fully transparent by means of the opacity values, on the two panels respectively and displayed with different defined colors which helps object separation.
+\begin{figure}[hbtp]
+\centering
+\includegraphics[scale=0.69]{images/ct.png}
+\caption{CT head rendered using different threshold values and the objects volume}
+\label{fig:ct}
+\end{figure}
+
+%biopsy 230x230x220, 10objs
+%250x 250
+\begin{figure}[hbtp]
+\centering
+\includegraphics[scale=0.69]{images/biopsy.png}
+\caption{Skull head rendered with and without the additional objects volume}
+\label{fig:biopsy}
+\end{figure}
+
+
+Another dataset used correspond to a head skull and brain, which size is $230\,x\,230\,x\,220$ in x,y and z dimension respectively.
+Figure \ref{fig:biopsy} shows the rendered volume much the same as for the CT head. The top row shows different rotation matrices applied to the volume. The second row, display the objects present in the volume, which sum up to a total of ten, rendered with different opacities and colors as well, to isolate regions of interest.
+\linespace
+
+The last volumetric dataset used is an MRI study of another human head which size is $176\,x\,236\,x\,187$, and it has six different defined objects which belong to the brain. The top row shows the volume from different angles, the second one shows the different objects with different opacities where a full opaque outer brain layer (with defined alpha value one) obfuscate the inner parts.
+\linespace 
+
+These two last volumes have one characteristic in common, isovalue filtering by threshold is ineffective. Therefore, as illustrated in previous pictures, the capability of showing semi-transparent surface along with the ability of separate groups insides volume by means of objects is crucial to obtain a meaningful visualization.
+
+\begin{figure}[hbtp]
+\centering
+\includegraphics[scale=0.69]{images/mri.png}
+\caption{MRI head rendered with different rotation, visible objects colors and different rotation matrices }
+\label{fig:mri}
+\end{figure}
+\vspace{\fill}
+
+%mri 3D head 176x236x187, 6 obj
+
 \subsection{Results comparisons} 
+%tabs
 \subsection{Final considerations} 
-\subsection{Discussion} 
+Volume rendering by ray casting has proved to be an effective method for the visualization of surfaces from sampled scalar volumetric data. As demonstrated by the figures, it can generate images exhibiting approximately equivalent resolution, yet containing fewer interpretation errors than techniques relying on geometric primitives.
+\linespace
+
+It is also clear that an open accelerated implementation that employs graphical devices and their parallel execution power can compete with state-of-the-art closed systems and other procedures both indirect rendering category and in indirect rendering one.
+The computational power available trough the robust CUDA library let the procedure scales without much efforts in the future with better hardware equipment, like NVIDIA TESLA architecture,  and also in systems where multiple GPUs are available. 
+\linespace
+
+The open MATLAB prototype concretely demonstrates the feasibility of volume racy casting as a method of choice, while opening to new possibilities of integration in other systems.
+\linespace
+
+However, volume ray casting is very sensitive to artifacts in the acquisition process, as can be seen in the figures above, manifesting as image striping, for example. 
+\linespace
+
+Another issue was found while integrating the algorithm with the MATLAB graphical interface,specifically the viewport, as already mentioned.
+
+One solution can be to program the user UI to automatically adapt to the output of the procedure in order to prevent image stretching. Howsoever, this is a trivially solvable issue that is only linked to MATLAB.
+
 \subsection{Outlook}
+% 
+% bounding box
+% built it as a indepedent libary to be able to used it directly in other C/C++ pograms
+% Add more user interactions 
+% more powerful interface
 \pagebreak
 \section*{References}
 \addcontentsline{toc}{section}{References}
