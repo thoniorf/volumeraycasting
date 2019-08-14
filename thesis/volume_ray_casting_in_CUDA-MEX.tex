@@ -11,16 +11,38 @@
 \usepackage{listings}
 \usepackage[style=alphabetic]{biblatex}
 \usepackage[dvipsnames]{xcolor}
+\usepackage{hyperref}
+\usepackage{titling}
 \addbibresource{references.bib}
-
 %\usepackage[a4paper,left=3cm,right=2cm,bottom=4cm,headheight=110pt]{geometry}
 %\usepackage[a4paper,left=3cm,right=2cm,bottom=4cm,headheight=110pt,headsep=2cm,showframe]{geometry}
 \usepackage[a4paper,left=3cm,right=2cm,headheight=110pt]{geometry}
+
+\newcounter{@dayofsubmission}
+\newcounter{@monthofsubmission}
+\newcounter{@yearofsubmission}
+\setcounter{@dayofsubmission}{\the\day}
+\setcounter{@monthofsubmission}{\the\month}
+\setcounter{@yearofsubmission}{\the\year}
+\newcommand{\dateofsubmission}[3]{%	%\dateofsubmission{yyyy}{mm}{dd}
+	\setcounter{@yearofsubmission}{#1}
+	\setcounter{@monthofsubmission}{#2}
+	\setcounter{@dayofsubmission}{#3}
+}
+
+\newcommand{\ccLicense}{
+This work is published under the conditions of the 
+\textsf{Creative Commons License} 
+\emph{Attribution-NonCommercial-NoDerivatives 4.0 International} 
+(CC BY-NC-ND 4.0)---see
+\url{https://creativecommons.org/licenses/by-nc-nd/4.0/}.}
+
 \pagestyle{fancy}
 \fancyhf{}
 \fancyhead[L]{\rightmark}
 \fancyhead[R]{\thepage}
 \renewcommand{\headrulewidth}{0pt}
+
 \newcommand{\row}[1]{% inline row vector
   \begin{matrix}(#1)\end{matrix}%
 }
@@ -39,9 +61,10 @@
                 tabsize=2,
                 #1}}
 {}
-
 \author{Antonio Fortino}
 \title{Volume ray casting accelerated with CUDA in Matlab MEX context}
+\dateofsubmission{2019}{09}{16}	% {YYYY}{MM}{DD}
+
 \begin{document}
 \pagenumbering{gobble}
 \maketitle
@@ -52,12 +75,29 @@ University of Applied Science Upper Austria Hagenberg Campus\\
 University of Calabria
 \end{center}
 \pagebreak
-\pagenumbering{roman}
 \fancyhf{}
 \fancyhead[R]{\thepage}
+
+\section*{Declaration}
+\noindent
+I hereby declare and confirm that this thesis is entirely the result of my own original work. 
+Where other sources of information have been used, they have been indicated as such and properly 
+acknowledged. I further declare that this or similar work has not been submitted for credit elsewhere.
+\vspace{10mm}
+
+\noindent
+		%\@placeofstudy, \the\year-\leadingzero{\month}-\leadingzero{\day} %http://de.wikibooks.org/wiki/LaTeX-W%F6rterbuch:_today 
+University of Applied Sciences, Hagenberg 2019.09.16
+\vspace{12mm}
+
+\noindent
+\theauthor
+
+\pagebreak
 \tableofcontents
 \pagebreak
-
+\pagenumbering{roman}
+\setcounter{page}{3}
 \section*{Introduction} 
 \addcontentsline{toc}{section}{Introduction}
 \pagebreak
@@ -2009,7 +2049,37 @@ These two last volumes have one characteristic in common, isovalue filtering by 
 \subsection{Results comparisons} 
 What follows is a comparison of the procedure performance while operating on the previous datasets. Parallel and non-parallel versions of the algorithm are tested, where the basic version without GPU acceleration is used as a performance lower bound, to ensure that concurrent execution brings a real improvement.
 
-The first test is done using original volumes without objects or defined opacities value, with a view resolution of $250\,x\,250$ pixels in a scale of greys. The following table illustrated the result achieved by both accelerated e non-parallel algorithm, using all the three datasets. The measure used to compare them is the execution time required to visualize the projected volume and also the time required to interact with it. Due to some overhead of Mex function loading in memory for the first time, it has been separated in a different column.
+\begin{table}[hbtp]
+\centering
+\begin{tabular}{l|cccc}
+                 & \multicolumn{2}{c|}{\textbf{non-parallel implementation}}                                                                                                                       & \multicolumn{2}{|c}{\textbf{CUDA accelerated}}                                                                                                             \\ \cline{2-5} 
+\textbf{dataset} & \multicolumn{1}{c|}{\begin{tabular}[c]{@{}c@{}}first rendering \\ time (s)\end{tabular}} & \multicolumn{1}{c|}{\begin{tabular}[c]{@{}c@{}}interaction \\ time (s)\end{tabular}} & \multicolumn{1}{c|}{\begin{tabular}[c]{@{}c@{}}first rendering \\ time (s)\end{tabular}} & \begin{tabular}[c]{@{}c@{}}interaction \\ time (s)\end{tabular} \\ \hline
+CT head          & 0.08876                                                                                  & 0.1283                                                                               & 0.21955                                                                                  & 0.0366                                                          \\
+skull            & 0.32618                                                                                  & 0.371065                                                                             & 0.59964                                                                                  & 0.055374                                                        \\
+MRI head         & 0.11764                                                                                  & 0.14546                                                                              & 0.23626                                                                                  & 0.039384                                                       
+\end{tabular}
+\caption{Rendering performances of plain volumes, without objects definition}
+\label{tab:plaivolumes}
+\end{table}
+
+The first test is done using original volumes without objects or defined opacities value, with a view resolution of $250\,x\,250$ pixels in a scale of greys. Table \ref{tab:plaivolumes} illustrated the result achieved by both accelerated e non-parallel algorithm, using all the three datasets. The measure used to compare them is the execution time required to visualize the projected volume and also the time required to interact with it. Due to some overhead of Mex function loading in memory for the first time, it has been separated in a different column.
+\linespace
+
+The second and last test is done with volumes and different visible objects. The view image resolution is the same, $250\,x\,250$ pixels, and each object had its own defined color. Again both versions are used to evaluate the improvement of the accelerated version with respect to non-parallel one.
+Table \ref{tab:objsvolumes} shows the rendering performances of algorithms.
+
+\begin{table}[hbtp]
+\centering
+\begin{tabular}{l|cc}
+                 & \multicolumn{1}{c|}{\textbf{non-parallel implementation}} & \textbf{CUDA accelerated} \\ \cline{2-3} 
+\textbf{dataset} & \multicolumn{1}{c|}{interaction time (s)}                 & interaction time (s)      \\ \hline
+CT head          & 0.860326                                                  & 0.120616                  \\
+skull            & 3.255758                                                  & 0.2249                    \\
+MRI head         & 1.69959                                                   & 0.138242                 
+\end{tabular}
+\caption{Rendering performances of volumes without different visible objects}
+\label{tab:objsvolumes}
+\end{table}
 
 
 \subsection{Final considerations} 
@@ -2017,7 +2087,9 @@ Volume rendering by ray casting has proved to be an effective method for the vis
 \linespace
 
 It is also clear that an open accelerated implementation that employs graphical devices and their parallel execution power can compete with state-of-the-art closed systems and other procedures both indirect rendering category and in indirect rendering one.
-The computational power available trough the robust CUDA library let the procedure scales without much efforts in the future with better hardware equipment, like NVIDIA TESLA architecture, and also in systems where multiple GPUs are available. 
+The computational power available trough the robust CUDA library let the procedure reach the real-time interaction, and visualization speed aims of this work.
+
+It also let the algorithm scales without much efforts in the future with better hardware equipment, like NVIDIA TESLA architecture, and also in systems where multiple GPUs are available. 
 \linespace
 
 The open MATLAB prototype concretely demonstrates the feasibility of volume racy casting as a method of choice, while opening to new possibilities of integration in other systems.
@@ -2026,19 +2098,26 @@ The open MATLAB prototype concretely demonstrates the feasibility of volume racy
 However, volume ray casting is very sensitive to artifacts in the acquisition process, as can be seen in the figures above, manifesting as image striping, for example. 
 \linespace
 
-Another issue was found while integrating the algorithm with the MATLAB graphical interface,specifically the viewport, as already mentioned.
+Another issue was found while integrating the algorithm with the MATLAB graphical interface, specifically the viewport, as already mentioned.
 
 One solution can be to program the user UI to automatically adapt to the output of the procedure in order to prevent image stretching. Howsoever, this is a trivially solvable issue that is only linked to MATLAB.
-
 \subsection{Outlook}
-% 
-% bounding box
-% built it as a indepedent libary to be able to used it directly in other C/C++ pograms
-% Add more user interactions 
-% more powerful interface
+Although the presented implementation reached the original objectives of this work of a volume ray casting open algorithm capable of effective medical visualization and real-time user interaction, exploiting GPU's concurrent execution model, many performance improvement and optimization are still needed.
+\linespace
+
+The first improvement may be the integration of optimized data structure, such as hierarchical spatial structures.\cite{levoy_1990:5} The idea is to identify macro areas of uninteresting voxels, which means voxels of zero intensity, below the threshold value or with opacity zero, enumerate them and reduce the computation time wasted on these areas rejecting them.
+
+\cite{levoy_1990:5} also presented some early ray termination conditions, such as the opacity test when displaying multiple semi-transparent surfaces. The principle is to sum opacities of the surfaces encountered on the ray, and it is useless sampling farther if the total opacity stored on the ray is already equal to 1, saving precious computational time.
+\linespace
+
+Another improvement with respect to the CUDA C++ source code could be to decouple the ray casting procedure completely from the MATLAB Mex function, for example, building it as a static library. It would increase the degree of freedom because it would let users call the algorithm not only from MATLAB but also from other C++ program or C++ to other languages wrapper.
+\linespace
+
+Lastly, the current prototype available user interactions and features are few. Therefore, a more powerful prototype with more features such as zooming, panning, or some other graphical controls would be a good improvement that could transform this prototype in full-fledged visualization software.
 \pagebreak
 \section*{References}
 \addcontentsline{toc}{section}{References}
 \nocite{*}
 \printbibliography[heading=none]{}
+\section*{Acknowledgements}
 \end{document}
