@@ -630,13 +630,6 @@ void raycasting(mxDouble * viewOutput, mxDouble const * const volume, mxDouble c
 	}
 	return;
 }
-__global__ void test_kernel(int const *const a, int * const b, const int n) {
-	int const i = blockDim.x * blockIdx.x + threadIdx.x;
-	if (i < n) {
-		b[i] =a[i];
-	}
-	return;
-}
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 	std::time(&timer);
@@ -669,7 +662,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 	const mxDouble *colorArray = mxGetPr(mxGetField(prhs[2], 0, "colors"));
 
 	const mwSize alphaSize = mxGetNumberOfElements(mxGetField(prhs[2], 0, "alpha"));
-	mwSize visibleObjSize = 0;
 
 	options.setImageSize(viewArray[0], viewArray[1]);
 	options.imageDimension = options.imageHeight * options.imageWidth;
@@ -684,7 +676,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 
 	mxGPUArray * const  d_viewArray = mxGPUCreateGPUArray(3, frameDimensions, mxDOUBLE_CLASS, mxREAL, MX_GPU_INITIALIZE_VALUES);
 	mxDouble * d_viewOutput = (mxDouble *)mxGPUGetData(d_viewArray);
-
+#if DEBUG
 	std::cout << "SIZE " << sizeArray[0] << " " << sizeArray[1] << " " << sizeArray[2] << std::endl
 		<< "VOX " << numberOfVoxels << std::endl
 		<< "VIEW " << viewArray[0] << " " << viewArray[1] << std::endl
@@ -692,7 +684,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 		<< "INT " << intensityArray[0] << " " << intensityArray[1] << std::endl
 		<< "THR " << thresholdArray[0] << std::endl
 		<< "OBJS SIZE " << objectSizeArray[0] << " " << objectSizeArray[1] << " " << objectSizeArray[2] << std::endl;
-
+#endif
 
 	if (numberOfObjects > 0) {
 		for (int j = 0; j < alphaSize; ++j) {
@@ -744,7 +736,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 	camera.yaw(rotationArray[0]);
 	camera.setupLookAtMatrix();
 
-	double littleStep = 1;
 	size_t maxStep = std::sqrt(sizeArray[0] * sizeArray[0] + sizeArray[1] * sizeArray[1] + sizeArray[2] * sizeArray[2]);
 
 	double halfWidth = std::fabs(options.imageWidth / 2);
@@ -753,8 +744,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 	Color colors;
 	YuvColor yuvColors;
 
-	double tmin = 0, tmax = 0;	
-
 	cudaError_t err = cudaSuccess;
 	int* d_visibleObj;
 	cudaMalloc((void**)&d_visibleObj, options.visibleObjectsSize * sizeof(int));
@@ -762,16 +751,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 	double* d_visibleAlpha;
 	cudaMalloc((void**)&d_visibleAlpha, options.visibleObjectsSize * sizeof(double));
 	err = cudaMemcpy(d_visibleAlpha, visibleAlpha, options.visibleObjectsSize * sizeof(double), cudaMemcpyHostToDevice);
-
-	// test
-	int * d_b;
-	cudaMalloc((void**)&d_b, options.visibleObjectsSize * sizeof(int));
-	test_kernel<<<1, 2 >>>(d_visibleObj, d_b, visibleObjSize);
-	int *b = new int[options.visibleObjectsSize];
-	cudaMemcpy(b, d_b, options.visibleObjectsSize * sizeof(int), cudaMemcpyDeviceToHost);
-	std::cout<<"test:" <<b[0]<<std::endl;
-	cudaFree(d_b);
-	delete [] b;
 
 	//call kernel
 	raycasting<<<std::ceil(options.imageDimension / 256.0), 256 >>>(d_viewOutput, d_Volume, d_ObjectVolume, d_Size, d_visibleObj,d_visibleAlpha,

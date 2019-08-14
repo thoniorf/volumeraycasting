@@ -1998,6 +1998,7 @@ The last volumetric dataset used is an MRI study of another human head which siz
 \linespace 
 
 These two last volumes have one characteristic in common, isovalue filtering by threshold is ineffective. Therefore, as illustrated in previous pictures, the capability of showing semi-transparent surface along with the ability of separate groups insides volume by means of objects is crucial to obtain a meaningful visualization.
+\pagebreak
 
 \begin{figure}[hbtp]
 \centering
@@ -2005,18 +2006,18 @@ These two last volumes have one characteristic in common, isovalue filtering by 
 \caption{MRI head rendered with different rotation, visible objects colors and different rotation matrices }
 \label{fig:mri}
 \end{figure}
-\vspace{\fill}
-
-%mri 3D head 176x236x187, 6 obj
-
 \subsection{Results comparisons} 
-%tabs
+What follows is a comparison of the procedure performance while operating on the previous datasets. Parallel and non-parallel versions of the algorithm are tested, where the basic version without GPU acceleration is used as a performance lower bound, to ensure that concurrent execution brings a real improvement.
+
+The first test is done using original volumes without objects or defined opacities value, with a view resolution of $250\,x\,250$ pixels in a scale of greys. The following table illustrated the result achieved by both accelerated e non-parallel algorithm, using all the three datasets. The measure used to compare them is the execution time required to visualize the projected volume and also the time required to interact with it. Due to some overhead of Mex function loading in memory for the first time, it has been separated in a different column.
+
+
 \subsection{Final considerations} 
 Volume rendering by ray casting has proved to be an effective method for the visualization of surfaces from sampled scalar volumetric data. As demonstrated by the figures, it can generate images exhibiting approximately equivalent resolution, yet containing fewer interpretation errors than techniques relying on geometric primitives.
 \linespace
 
 It is also clear that an open accelerated implementation that employs graphical devices and their parallel execution power can compete with state-of-the-art closed systems and other procedures both indirect rendering category and in indirect rendering one.
-The computational power available trough the robust CUDA library let the procedure scales without much efforts in the future with better hardware equipment, like NVIDIA TESLA architecture,  and also in systems where multiple GPUs are available. 
+The computational power available trough the robust CUDA library let the procedure scales without much efforts in the future with better hardware equipment, like NVIDIA TESLA architecture, and also in systems where multiple GPUs are available. 
 \linespace
 
 The open MATLAB prototype concretely demonstrates the feasibility of volume racy casting as a method of choice, while opening to new possibilities of integration in other systems.
