@@ -536,7 +536,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 	mwSize frameDimensions[3] = { options.imageWidth,options.imageHeight,3 };
 	plhs[0] = mxCreateNumericArray(3, frameDimensions, mxDOUBLE_CLASS, mxREAL);
 	mxDouble* viewOutput = mxGetPr(plhs[0]);
-
+ #if DEBUG
 	std::cout << "SIZE " << sizeArray[0] << " " << sizeArray[1] << " " << sizeArray[2] << std::endl
 		<< "VOX " << numberOfVoxels << std::endl
 		<< "VIEW " << viewArray[0] << " " << viewArray[1] << std::endl
@@ -544,7 +544,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 		<< "INT " << intensityArray[0] << " " << intensityArray[1] << std::endl
 		<< "THR " << thresholdArray[0] << std::endl
 		<< "OBJS SIZE " << objectSizeArray[0] << " " << objectSizeArray[1] << " " << objectSizeArray[2] << std::endl;
-
+#endif DEBUG
 	if (numberOfObjects > 0) {
 		for (int j = 0; j < alphaSize; ++j) {
 			if (alphaArray[j] > 0.0) {
@@ -604,7 +604,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 		int visObj = 0;
 		for (size_t i = 0; i < alphaSize; ++i) {
 			if (alphaArray[i] > 0) {
-				std::cout << "Added " << i << " with alpha " << alphaArray[i] << std::endl;
 				visibleAlpha[visObj] = alphaArray[i];
 				visibleObj[visObj] = i;
 				visObj++;
@@ -650,7 +649,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 
 									Vector3 lightDir = camera.from.normalize();
 									double distance = lightPosition.length();
-									double lambertian = lightDir.dot(normal);
 
 									Vector3 viewDir = rayStart.normalize();
 									Vector3 halfDir = (lightDir + viewDir).normalize();
@@ -661,7 +659,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 									diffuseColor = colors.getColorByIndex(visibleObj[iObj]);
 
 									// 1* lightAmbientColor  +  1* lightDiffuseColor*dot(lightdir,normals) * weight  +  1* lightSpecularColor * [dot(halfdir,normals)]^shininess * (1-weight)
-									Vector3 IlluminationI = ambientColor + diffuseColor * lambertian * specularity + specularColor * specular * (1 - specularity);
+									Vector3 IlluminationI = ambientColor + diffuseColor  * specularity + specularColor * specular * (1 - specularity);
 									//convert to yuv
 									Vector3 yuvIllumination = rgbToYuv.ColMajMatrixMulti(IlluminationI);
 									//get diffuse color in yuv color schema
