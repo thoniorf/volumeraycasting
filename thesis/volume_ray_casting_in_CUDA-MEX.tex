@@ -249,11 +249,11 @@ Therefore, in order to be able to perform a multiplication between a position ve
  
 Such new component is known as \textbf{homogeneous point} (or a point with \textbf{homogeneous coordinates}), that usually assume value 1, besides when not very common transformation are applied like the shear transformation or when dealing with perspective projection.
 
-\paragraph{Scale transformation}\vspace{8pt} The scale transformation is used unsurprisingly to scale-up and scale-down the magnitude of the vector but preserving its direction. There exists two type of scaling operation: \textbf{non-uniform scale} and \textbf{uniform scale}. 
+\paragraph{Scale transformation} The scale transformation is used unsurprisingly to scale-up and scale-down the magnitude of the vector but preserving its direction. There exists two type of scaling operation: \textbf{non-uniform scale} and \textbf{uniform scale}. 
 
-It depends on the scaling factor applied to the different dimension, if the scalar would be equal on all axes(X, Y and Z as it is a 3-dimensional space) it would be an uniform scale, otherwise it would be a non-uniform scale operation. 
+It depends on the scaling factor applied to the different dimension if the scalar would be equal on all axes(X, Y, and Z as it is a 3-dimensional space) it would be a uniform scale; otherwise, it would be a non-uniform scale operation. 
 
-An example of the matrix that encodes this transformation can be seen below, using $S_{1}$,$S_{2}$ and $S_{3}$ to represent the scaling variables:
+An example of the matrix that encodes this transformation is shown below, using $S_{1}$,$S_{2}$ and $S_{3}$ to represent the scaling variables:
 \[
 \begin{pmatrix}
 S_{1} & 0 & 0 & 0\\
@@ -276,8 +276,8 @@ S_{3} \cdot z \\
 \end{pmatrix}
 \;.
 \]
-\paragraph{Translation} The translation transformation will move an point in any of the three direction by means of the translation vector. In previous examples the column-major has been used, but for the sake of simplicity vectors will be expressed as row-major order. \footnote{In computing, row-major order and column-major order are methods for storing multidimensional arrays in linear storage. In a row-major order, the consecutive elements of a row reside next to each other, whereas the same holds true for consecutive elements of a column in a column-major order  \cite{wiki_row_major:1}}. 
-Such vector is it encoded into the transformation matrix as follows:
+\paragraph{Translation} The translation transformation moves a point in any of the three directions by means of a translation vector. In previous examples, the column-major has been used, but for the sake of simplicity, vectors will be expressed as row-major order. \footnote{In computing, row-major order and column-major order are methods for storing multidimensional arrays in linear storage. In row-major order, the consecutive elements of a row reside next to each other, whereas the same holds for consecutive elements of a column in a column-major order  \cite{wiki_row_major:1}}. 
+Such a vector is encoded into the transformation matrix as follows:
 \[
 \begin{pmatrix}
 1 & 0 & 0 & 0\\
@@ -285,15 +285,18 @@ Such vector is it encoded into the transformation matrix as follows:
 0 & 0 & 1 & 0\\
 T_{x} & T_{y} & T_{z} & 1\\
 \end{pmatrix}
-\row{x&y&z&1}
+\begin{pmatrix}
+x\\y\\z\\1\\
+\end{pmatrix}
  = 
- \row{x+T_{x}&y+T_{y}&z+T_{z}&1}
+\begin{pmatrix}
+x+T_{x}\\y+T_{y}\\z+T_{z}\\1\\
+\end{pmatrix}
  \;.
 \]
-\paragraph{Rotate transformation} There exists different rotate transformation matrices, each of which works with respect to one axis because space rotations, in a 3-dimensional, are specified with a rotation angle and a rotation axis.
+\paragraph{Rotate transformation} There exist different rotation matrices, each of them work with respect to one axis because space rotations, in a 3-dimensional, are specified with a rotation angle and a rotation axis.
 
-Therefore there is the rotation matrix around the X-axis, the rotation matrix around the Y-axis and the rotation matrix around the Z-axis. Such transformations are done by means of using trigonometry functions \textit{sine} and \textit{cosine}.
-
+Therefore there is the rotation matrix around the X-axis, the rotation matrix around the Y-axis and the rotation matrix around the Z-axis. Such transformations are done by means of using the trigonometry functions \textit{sine} and \textit{cosine}.\\
 Rotation around X-Axis:
 \[
 \begin{pmatrix}
@@ -302,7 +305,8 @@ Rotation around X-Axis:
 0&\sin(\theta)&\cos(\theta)&0\\
 0&0&0&1\\
 \end{pmatrix}
-\]
+\;.
+\] 
 Rotation around Y-Axis:
 \[
 \begin{pmatrix}
@@ -311,6 +315,7 @@ Rotation around Y-Axis:
 \sin(\theta)&0&\cos(\theta)&0\\
 0&0&0&1\\
 \end{pmatrix}
+\;.
 \]
 Rotation around Z-Axis:
 \[
@@ -320,17 +325,17 @@ Rotation around Z-Axis:
 0&0&1&0\\
 0&0&0&1\\
 \end{pmatrix}
+\;.
 \]
 
 
-Using the rotation matrices we can then transform a position vector around one of the three axes. However, in order to combine and perform more complex transformation they must be applied following a certain order: rotating first around the Y-Axis, the around the X-Axis and finally around the Z-Axis. Otherwise, the resulting combined matrix will returns an unwanted and incorrect rotation of the a given point.
+Using the rotation matrices allows to transform a position vector around one of the three axes. However, in order to combine and perform more complex transformation they must be applied following a particular order: rotating first around the Y-Axis, the around the X-Axis and finally around the Z-Axis. Otherwise, the resulting combined matrix will return an unwanted and incorrect rotation of the given point.
 \linespace
 
-The last concept that goes along with affines transformations and that is present in every computer graphics application, in some form or another is \textbf{the camera}. Indeed, it is also included in the implementation part of this work as usually, cameras are the first means of interaction of users with a 3-dimensional scene in computer graphics, using mouse, keyboard or other graphical widgets available.
+The last concept that goes along with affines transformations and that is present in every computer graphics application, in some form or another is \textbf{the camera}. Indeed, it is also included in the implementation part of this work as usually, cameras are the first means of the interaction of users with a 3-dimensional scene in computer graphics, using a mouse, keyboard or other graphical widgets available.
 \linespace
 
-
-The reason why it is explained along with affine transformations is because the two concepts are strictly related with each other. A camera is none other than an object that moves around the world and project the objects that falls under its visibility box, called frustum shown in Figure \ref{fig:viewfrustum}.\footnote{The view frustum is the region of space in the modeled world that may appear on the screen \cite{wiki_frustum:1}}.
+The reason why it is explained along with affine transformations is that the two concepts are strictly related to each other. A camera is nothing else than an object that moves around the world and projects the objects that fall under its visibility box, called frustum, shown in Figure \ref{fig:viewfrustum}.\footnote{The view frustum is the region of space in the modeled world that may appear on the screen \cite{wiki_frustum:1}}.
 \begin{figure}[hbtp]
 \centering
 \includegraphics[scale=0.2]{images/ViewFrustum.png}
@@ -339,13 +344,13 @@ The reason why it is explained along with affine transformations is because the 
 \end{figure}
 
 
-In order to define a camera few components must be defined first, because cameras are defined by a front vector, an up vector and a right vector, beside the usual position vector that is part of other \textit{'non special'} objects. These vectors all together defines the direction, orientation, rotation and of course the position of a camera.
-There exist one easy and immediate way of encoding all these vector together, by means of a matrix known as \textbf{lookup matrix}.
+In order to define a camera, few components must be defined first, because cameras are defined by a front vector, an up vector, and a right vector, beside the usual position vector that is part of other \textit{'non special'} objects. These vectors all together define the direction, orientation, rotation, and of course, the position of a camera.
+There exist one easy and immediate way of encoding all these vectors together, by means of a matrix, known as \textbf{lookup matrix}.
 \linespace
 
-The technique to build such a lookup matrix is known as Look-At. The idea is that in order to set the camera position and the orientation,two point in the space are needed: one to actually position the camera, called \textit{'from'} and a point that defines what the camera is looking at, called \textit{'to'}.
+The technique to build such a lookup matrix is known as \textit{look-at}. The idea is that in order to set the camera position and the orientation, two points in space are needed: one to position the camera, called \textit{'from'} and a point that defines what the camera is looking at, called \textit{'to'}.
 
-The lookup matrix that is used to control a camera, is defined as follows:
+The lookup matrix that is used to control a camera is defined as follows:
 \[
 \begin{pmatrix}
 Right_{x} & Right_{y} & right_{z} & 0\\
@@ -353,62 +358,64 @@ Up_{x} & Up_{y} & Up_{z} & 0\\
 Forward_{x} & Forward_{y} & Forward_{z} & 0\\
 T_{x}& T_{y} & T_{z} & 0\\
 \end{pmatrix}
+\;.
 \]
 
 The method to build this lookup matrix from the from-to pair of points can be broken down in four steps:
 \begin{itemize}
-\item \textbf{compute the forward axis}: The forward axis is aligned with the segment defined by the points from and to. Therefore, the forward vector is computer as: 
+\item \textbf{compute the Forward axis}: The forward axis is aligned with the segment defined by the points from and to. Therefore, the $\vec{Forward}$ vector is computer as the normalized vector of the difference between the vector $\vec{To}$ and the vector $\vec{From}$: 
 \[
-Forward = \frac{To - From}{|To-From|}
+\vec{Forward} = \frac{\vec{To} - \vec{From}}{|\vec{To}-\vec{From}|} \;.
 \] 
-The normalized vector of the difference between the vector \textbf{to} and the vector \textbf{from}.
-\item \textbf{compute the right vector}: The right vector is perpendicular to the forward vector. Therefore, it can be computed as the result of a cross product between the forward vector and another vector such as the Up vector. 
 
-However, as the Up vector is still unknown, a new temporary vector must be introduced. 
+\item \textbf{compute the Right vector}: The $\vec{Right}$ vector is perpendicular to the forward vector. Therefore, it can be computed as the result of a cross product between the forward vector and another vector such as the $\vec{Up}$ vector. 
 
-Usually, such temporary vector is either one the unit vectors that represent on of the axis, such as the Y-Axis unit vector $\begin{pmatrix}
+However, as the $\vec{Up}$ vector is still unknown, a new auxiliary vector must be introduced. 
+
+Usually, such auxiliary vector is either one the unit vectors that represent one of the axis, such as the Y-Axis unit vector $\begin{pmatrix}
 0 & 1 &0
-\end{pmatrix}$. Therefore, the right vector can be calculate as follows:
+\end{pmatrix}$. Therefore, the $\vec{Right}$ vector is calculated as follows:
 \[
-Right = \begin{pmatrix}
+\vec{Right} = \begin{pmatrix}
 0 & 1 & 0
 \end{pmatrix}
-\times Forward
+\times \vec{Forward}
+\;.
 \]
-\item \textbf{compute the up vector} As the Right vector, computing the Up vector is easy as the cross product between the Forward vector and the Right vector, because they are orthogonal so computing the cross product will give the missing third vector.
+\item \textbf{compute the Up vector} As the $\vec{Right}$ vector, computing the $\vec{Up}$ vector is easy as the cross product between the $\vec{Forward}$ vector and the $\vec{Right}$ vector, because they are orthogonal so computing the cross product will give the missing third vector.
 
-Therefore, the Up vector is equal to:
+Therefore, the $\vec{Up}$ vector is equal to:
 \[
-Up = Forward \times Right
+\vec{Up} = \vec{Forward} \times \vec{Right} \;.
 \]
-\item \textbf{Build the lookup matrix} : the lookup matrix can be built by just replacing the computed vectors like the matrix above:
+\item \textbf{Build the lookup matrix} : the lookup matrix is built by just replacing the computed vectors like the matrix above:
 \begin{itemize}
-\item First row: Right vector
-\item Second row: Up vector
-\item Third row: Forward vector
-\item Fourth row: From point vector
+\item First row: $\vec{Right}$ vector
+\item Second row: $\vec{Up}$ vector
+\item Third row: $\vec{Forward}$ vector
+\item Fourth row: $\vec{From}$ point vector
 \end{itemize}
 \end{itemize}
 
-It is important to point out that this method as some limitations that must be taken into account. The weakness of the LookAt method is that when the camera is vertical looking straight down or straight up, the forward axis gets very closes to the arbitrary axis used to compute the right axis. 
+It is important to point out that this method has some limitations that must be taken into account. The weakness of the \textit{look-at} method is when the camera is vertical looking straight down or straight up, the forward axis gets very closes to the arbitrary axis used to compute the right axis. 
 
-Unfortunately, in this particular case, the cross product fails producing a result for the Right vector, so it also fails producing a result for the Up vector. There exists an elegant solution such as using quaternion interpolation. 
+Unfortunately, in this particular case, the cross product fails producing a result for the $\vec{Right}$ vector, so it also fails producing a result for the $\vec{Up}$ vector. There exists an elegant solution such as using quaternion interpolation. 
 
-However, for the sake of simplicity, in this work this edge case has been handle with ad hoc solution by changing the arbitrary axis, as it can be seen in the implementation.
+However, for the sake of simplicity, in this work this edge case has been handle with ad-hoc solution by changing the arbitrary axis, as it is seen in the implementation.
 %lookup matrix
-\subsubsection{Coordinates systems}
-In computer graphics every object is positioned in the world and therefore it has some coordinates that let its position defined and retrieved. Such coordinates can resides both in 2-dimensional or 3-dimensional space \cite{wiki_coordinate:1}. Mathematically speaking, as coordinate system uses ordered coordinates to uniquely determine the position of the points or other geometric elements on a manifold such as Euclidean space \cite{wiki_euclidean:1}.
+\subsubsection{Coordinate systems}
+In computer graphics every object is positioned in the world and by some coordinates. Such coordinates can reside both in 2-dimensional or 3-dimensional space \cite{wiki_coordinate:1}. In geometry, coordinate system uses ordered numbers or coordinates to uniquely determine the position of a point or other geometric elements in an Euclidean space \cite{wiki_euclidean:1}.
 
 %TODO right hand - left hand
-Usually with computer graphics the first kind of coordinates that comes into people mind are 3-dimensional. Indeed, usually the world coordinates system is the first one that is recollected as a direct consequence of 3-dimensional computer graphics software in the people's imaginary collective.
+Usually with computer graphics the first kind of coordinates that comes into people's mind are 3-dimensional. Indeed, usually the world coordinate system is the first one that is recollected as a direct consequence of 3-dimensional computer graphics software in the people's imaginary collective.
 
 
-However, there exists different type of coordinate system inside a single computer graphics application, besides World space system, such as Local space system, View space and Screen space, but not limited to as it also depends of the specific implementation,; for example application made with OpenGL framework also deals with clip space.
+However, there exist different types of coordinate system inside a single computer graphics application, besides the world space system, the local space system, view space and screen space, but not limited to as it also depends of the specific implementation; for example, applications made with OpenGL framework also deal with clip space.
 \begin{itemize}
-\item World space: Coordinates in this system are exactly what they sounds like, coordinates that are relatives to a global origin from which every object refer to, usually $(0,0,0)$.
-\item Local space: Coordinates of this system are local to the object, this means that they refers to the origin of your object.
-\item View space: The view space is what people usually refer to as the camera. Coordinates in this system are the result of the transformation from world space that are in front of the user's view (or eye).
-\item Screen space: Defines the coordinates inside the range of the screen size with respect to its width and height in terms of pixels (eg. $1920$ x $1080$ ).
+\item World space: coordinates in this system are exactly what they sound like, coordinates that are relative to a global origin from which every object refer to, usually $(0,0,0)$.
+\item Local space: coordinates of this system are local to the object, this means that they refer to the origin of your object.
+\item View space: the view space is what people usually refer to as the camera. Coordinates in this system are the result of the transformation from world space that are in front of the user's view (or eye).
+\item Screen space: defines the coordinates inside the range of the screen size with respect to its width and height in terms of pixels, eg. $1920$ x $1080$ .
 \end{itemize}
 
 \begin{figure}[hbtp]
@@ -418,34 +425,34 @@ However, there exists different type of coordinate system inside a single comput
 \label{fig:coordinate_systems}
 \end{figure}
 
-In order to properly render an image on the screen, independently of the actual implementation, several transformation must be performed. The reason is that, objects are first defined inside the local space, then such coordinates must be transformed to world space coordinates to be able to build a space relation between other objects. Then View and Screen space coordinates are need to correctly place the object into our 2-dimensional space in which every image on the screen resides.
+In order to properly render an image on the screen, independently of the actual implementation, several transformation must be performed. The reason is that, objects are first defined inside the local space, then such coordinates must be transformed to world space coordinates to be able to build a space relation between other objects. Then view and screen space coordinates are need to correctly place the object into our 2-dimensional space in which every image on the screen resides.
 
 
 To transform the coordinates in one space to the next coordinate space we'll use several transformation matrices, also known as affine transformation, as already explained in the previous section.
-Here it is possible to have a global view of the proceed and the different transformation matrices that are applied to an object to be rendered on the screen Figure \ref{fig:coordinate_systems}.
+Here it is possible to have a global view of the process and the different transformation matrices that are applied to an object to be rendered on the screen, cf. Figure \ref{fig:coordinate_systems}.
 
 %TODO transfomation matrices
 \pagebreak
 \subsection{The illumination model} %TODO 30
-Illumination models are the very important in computer graphics as they let rendering and visualization feels seamless and convincing even more in medical imaging where an effective representation is needed in order to get useful insight.
+Illumination models are very important in computer graphics as they let rendering and visualization feel seamless and convincing even more in medical imaging where an effective representation is needed in order to get useful insight.
  
-There exists different illumination model, such as Phong, Blinn-Phong, and Ray tracing. However in this section the focus will be concentrated on the Phong and Blinn-Phong models; the latter is an improved version of the first one as it solves some light-related artefacts.
+There exist different illumination model, such as Phong, Blinn-Phong, and Ray tracing. However in this section the focus will be concentrated on the Phong and Blinn-Phong models; the latter is an improved version of the first one as it solves some light-related artefacts.
 
-\paragraph{Phong reflection model} The Phong reflection model was developed by Bui Tuong Phong at the University of Utah, who published it in his 1975 Ph.D dissertation.
+\paragraph{Phong reflection model} The Phong reflection model was developed by Bui Tuong Phong at the University of Utah, who published it in his 1975 Ph.D dissertation \cite{phong_1975}.
 
-This reflection is an empirical model of local illumination. It describes the way a surface reflects light as combination of the diffuse reflection of rough surface with the specular reflection of shiny surfaces. The base observation made by Phong is that shiny surfaces have small intense specular highlights, while dull surfaces have large highlights that fall off more gradually. 
+This reflection is an empirical model of local illumination. It describes the way a surface reflects light as combination of rough surface's diffuse reflection with shiny surface's specular reflection. The base observation made by Phong is that shiny surfaces have small intense specular highlights, while dull surfaces have large highlights that fall off more gradually. 
 
-Therefore, Phong concluded that most materials can be described as having both a diffuse component and a specular component. Phong also included in the model an ambient term to account for the small amount of light that is scattered about the 3-dimensional scene.
+Therefore, Phong concluded, that most materials can be described as having both a diffuse component and a specular component. Phong also included in the model an ambient term to account for the small amount of light, that is scattered about the 3-dimensional scene.
 \linespace
 
-Phong reflection model tries to approximate the effect of the brightness points that forms on an object with a certain degree of roughness. In order to do it, his model takes into account the light source (or source in case of more than one), the diffuse component, the specular component, his ambient term and the viewing angle with respect to the surface and the light source, by means of computing the reflection direction of the light ray incident on the surface point and the dot product between this new reflected array and the view direction.
+Phong's reflection model tries to approximate the effect of the brightness points that forms on an object with a certain degree of roughness. In order to do it, his model takes into account the light source, or source in case of more than one, the diffuse component, the specular component, his ambient term and the viewing angle with respect to the surface and the light source, by means of computing the reflection direction of the light ray incident on the surface point and the dot product between this new reflected array and the view direction.
 
-Therefore, as each surface is made of points, the Phong reflection model provides an equation for computing the illumination of each ho these surface point, as follows:
+Therefore, as each surface is made of points, the Phong reflection model provides an equation for computing the illumination of each ho these surface point, as follows.
 \[
-I = k_{a} i_{a} + \sum_{m \in Lights} (k_{d}(L_{m} \cdot N)i_{m,d} +k_{s}(R_{m} \cdot V)^{\alpha}i_{m,s})
+I = k_{a} i_{a} + \sum_{m \in Lights} (k_{d}(L_{m} \cdot N)i_{m,d} +k_{s}(R_{m} \cdot V)^{\alpha}i_{m,s}) \;.
 \]
 
-For each light source, two components are defined: $i_{a}$ and $i_{d}$ that specifies the specular and the diffuse intensity of the light, often encoded as some color vector. The single therm $i_{a}$ controls the ambient light intensity.
+For each light source, two components are defined: $i_{a}$ and $i_{d}$ that specifies the specular and the diffuse intensity of the light, often encoded as some color vector. The single term $i_{a}$ controls the ambient light intensity.
 
 For each surface material, different component  are defined, as well as lights :
 \begin{itemize}
@@ -466,35 +473,35 @@ Furthermore, other parameter are defined:
 \item $R_{m}$ which is the direction of a reflect ray of light would take from the point on the surface.
 \end{itemize}
 
-The $R_{m}$ component is calculated as the reflection of the direction vector $L_{m}$ on the surface characterized by the surface normal $N$,as follows:
+The $R_{m}$ component is calculated as the reflection of the direction vector $L_{m}$ on the surface characterized by the surface normal $N$, as follows.
 \[
-R_{m} = 2(L_{m} \cdot N)N - L{m}
+R_{m} = 2(L_{m} \cdot N)N - L{m} \;.
 \]
-However, this model ha one issue: the angle between viewing direction and reflection direction vector  is not allowed to be more than 90 degrees, otherwise the dot product is negative and then the specular term is 0.
+However, this model has one issue: the angle between viewing direction and reflection direction vector  is not allowed to be more than 90 degrees, otherwise the dot product is negative and then the specular term is 0.
 \paragraph{Blinn-Phong reflection model}
 In order to overcome that issue, the phong model has been improved by Jim Blinn in 1977 \cite{blinn1977models}, generally as the Blinn-Phong reflection model. Since then, it has become the default shading model used in OpneGL and Direct3D's rendering pipeline. % ref wiki
 
 
-Blinn observation focused on the cross product between the reflection direction vector and viewing direction, that exposes the model to the previously mentioned issue. In his reflection model, instead, the $R \cdot V$ cross product is substituted by the cross product between what he called a \textit{halfway vector} between the viewer direction vector and the light source direction vector, and the surface normal. Such new vector $H$ can be computed as follows: %TODO insert image
+Blinn's observation focused on the dot product between the reflection direction vector and viewing direction, that exposes the model to the previously mentioned issue. In his reflection model, instead, the $R \cdot V$ dot product is substituted by the dot product between what he called a \textit{halfway vector} between the viewer direction vector and the light source direction vector, and the surface normal. Such new vector $H$ can be computed as follows.%TODO insert image
 \[
-H = \frac{L + V}{||L+V||}
+H = \frac{L + V}{||L+V||} \;.
 \]
 
-Therefore, the cross product $R \cdot V$ is replaced with $N \cdot H$.
+Therefore, the dot product $R \cdot V$ is replaced with $N \cdot H$.
 This dot product represents the cosine of an angle that is half of the angle represented by Phong's dot product if the vectors V, L, N and R all lie in the same plane.
 
 The closer this halfway vector aligns with the surface's normal vector, the higher the specular contribution. the resulting effects is that whatever direction the viewer is looking from, the angle between the halfway vector and the surface normal never exceeds 90 degrees, unless the lights position if far below the surface.
 \linespace
 
-The produced reflections are slightly different compared to Phong's, but they looks more visually plausible, especially with low specular exponents, as Phong reflections are always round for a flat surface, the Blinn-Phong reflections become more elliptical when the surface is viewed from a steep angle. but this can be compared to the case where a far away street light is reflected in wt pavement, where the reflection will always be much more extended vertically than horizontally.
+The produced reflections are slightly different compared to Phong's, but they look more visually plausible, especially with low specular exponents, as Phong reflections are always round for a flat surface, the Blinn-Phong reflections become more elliptical when the surface is viewed from a steep angle. but this can be compared to the case where a far away street light is reflected in wt pavement, where the reflection will always be much more extended vertically than horizontally.
 
 
 \subsubsection{Color spaces} %TODO 29
-Color spaces are one fundamental aspect of computer graphics and visualization in general. A colour space defines a model in which Color are organized, usually in a 3-dimensional space.
+Color spaces are one fundamental aspect of computer graphics and visualization in general. A color space defines a model in which Color are organized, usually in a 3-dimensional space.
 \linespace
 
-A colour model is an abstract mathematical model that describe the way Color can be represented as tuples of numbers; typically, such tuples are made of three components, also known as color component within the context of Color space.
-A 2-dimensional representation of the range of possible colors that can be represented by a particular system is called the \textbf{garmut}, Figure \ref{fig:gamut}.
+A colour model is an abstract mathematical model that describe the way color can be represented as tuples of numbers; typically, such tuples are made of three components, also known as color component within the context of color space.
+A 2-dimensional representation of the range of possible colors that can be represented by a particular system is called the \textbf{gamut}, cf. Figure \ref{fig:gamut}.
 
 \begin{figure}[hbtp]
 \centering
@@ -509,38 +516,38 @@ There exists different color spaces, each of which is well defined by some stand
 
 In the context of computer graphics and visualization of this work, there are few notable color spaces worth mentioning that can be used along the different techniques that will be described in the next sections, and these are:
 \begin{itemize}
-\item \textbf{RGB} : it stands for Red, Green and Blue, that are the main colors used in combination to generate all other possible available colors in the garmut of the space.
-\item \textbf{YUV} and \textbf{YCbCr} : These are two standard used with old screens and with HDTV respectively. They belong to a broader category of color spaces known as Luminance plus chroma or chrominance color space. The main advantage is that the real color is encoded in the two chrominance values and the luminance override the color brightness.
-\item \textbf{HSV} and \textbf{HSL} : These two standards can be seen as a direct transformation from the RGB color space. HSV stands for Hue, Saturation and Value, while HSL stands for Hue, Saturation and Luminance; they are used often because it a more natural way of dealing with with colors in terms of hue and saturation rather then in terms of adding or subtracting color component as in RGB space.
+\item \textbf{RGB} stands for Red, Green and Blue, that are the main colors used in combination to generate all other possible available colors in the gamut of the space.
+\item \textbf{YUV} and \textbf{YCbCr} are two standards used with old screens and with HDTV, respectively. They belong to a broader category of color spaces known as luminance plus chroma or chrominance color space. The main advantage is that the real color is encoded in the two chrominance values and the luminance override the color brightness.
+\item \textbf{HSV} and \textbf{HSL} are two standards can be seen as a direct transformation from the RGB color space. HSV stands for Hue, Saturation and Value, while HSL stands for Hue, Saturation and Luminance; they are often used because they are two more natural ways of dealing with with colors in terms of hue and saturation.
 \end{itemize}
-In the next paragraph will be describe how to go from one color space to another one. Specifically, as each color space has its own characteristic and mathematical foundations, focus will be narrowed on the color space that is also used in this work, beside RGB, that is YUV color space describing how it is defined and which is the proceed to convert a color defined in the RGB color space to a color defined in the specific color space.
+The next paragraph will describe how to go from one color space to another one. Specifically, as each color space has its own characteristics and mathematical foundations, focus will be narrowed on the color space that is also used in this work, beside RGB, that is YUV color space describing how it is defined and which is the process to convert a color defined in the RGB color space to a color defined in the specific color space.
 
 
-In particular the technique to go from and back between the RGB color space and the YUV color space has been used and implemented in this work during the shading phase of the proposed algorithm.
-\paragraph{From RGB to YUV and back} First of all, as already mentioned, the YUV color space defines a color is terms of Luminance(Y) and chrominance(UV). YUV was invented during the transition between only black-and-white television and color television. Indeed, at the beginning only the Luminance component was transmitted and the colors were sent by means of separate signals in order to be able to visualize colors in a black-and-white architecture.
+In particular the technique to change between the RGB color space and the YUV color space has been used and implemented in this work during the shading phase of the proposed algorithm.
+\paragraph{From RGB to YUV and back} First of all, as already mentioned, the YUV color space defines a color is terms of Luminance(Y) and chrominance(UV). YUV was invented in the beginning of color TV the model provided the further use of old black-and-white TVs. Indeed, at the beginning only the Luminance component was transmitted and the colors were sent by means of separate signals in order to be able to visualize colors in a black-and-white architecture.
 
 
-There exists different defined standards to convert a color from RGB to YUV and vice versa: \textbf{BT.601}, \textbf{BT.709} and \textbf{BT.2020}, developed for SDTV, HDTV and  UHDTV respectively\footnote{SDTV, HDTV and UHDTV are three categories of display format for digital television transmission, which differ from each other by the resolution lines.}.
+There exists different defined standards to convert a color from RGB to YUV and vice versa: \textbf{BT.601}, \textbf{BT.709} and \textbf{BT.2020}, developed for SDTV, HDTV and  UHDTV respectively\footnote{SDTV, HDTV and UHDTV are three categories of display format for digital television transmission, which differ from each other by the resolution lines.} \cite{wiki_yuv}.
 
-The main difference between these standards resides in the range breadth of the relative garmut, as UHDTV has a bigger and wider garmut then it comes HDTV and in the end SDTV.
+The main difference between these standards resides in the range width of the relative gamut, as UHDTV has a bigger and wider gamut then it has HDTV and in the end SDTV.
 
-They all share the common concept that the Y component of YUV represent a measure of overall luminance or brightness and therefore it is computed by applying different weights to the values of Red, Green and Blue of the RGB color space.
+These standards, all shares the common concept that the Y component of YUV represent a measure of overall luminance or brightness and it is computed starting from a color in RGB color space, by applying different weights to the values of Red, Green and Blue.
 
-Then, U and V chrominance values are compued as scaled differences between the luminance Y of YUV and the Blue and Red values of RGB.
+Then,the U and V chrominance values are compued as scaled differences between the luminance Y of YUV and the Blue and Red values of RGB.
 Each standards defines its own constants and weight to perform the transformation from RGB.
 Therefore, in order to convert from one color space to the other the weighting values must be defined, and these values are :
 \begin{itemize}
 \item $W_{R}$ : the weight for the red value of RGB and it is defined a constant value.
 \item $W_{B}$ : the weight for the blue value of RGB, defined also as a constant value.
-\item $W_{G}$ : the weight for the green value, defines by the following formula
+\item $W_{G}$ : the weight for the green value, defines by the following formula.
 \begin{center}
-$1-W_{R}-W_{B}$.
+$W_{G}=1-W_{R}-W_{B} \;.$ 
 \end{center}
-\item $U_{max}$ : it represent the maximum value of the U chroma component.
+\item $U_{max}$ : it represents the maximum value of the U chroma component.
 \item $V_{max}$ : the maximum value of the V chroma component.
 \end{itemize}
 Then, a YUV color is computed from linear RGB %TODOref to gamma corrected and sRGB
-applying these weight to the RGB components.
+applying these weights to the RGB components.
 
 \begin{figure}[hbtp]
 \centering
@@ -549,12 +556,12 @@ applying these weight to the RGB components.
 \end{figure}
 
 
-The luminance component Y is computed by means of the following formula:
+The luminance component Y is computed by means of the following formula where $R$, $G$ and $B$ represent red, blue and green components.
 \[Y = W_{R}R + W_{G}G + W_{B}B\]
 U and V chromatic components can be computed as follows:
-\[U = \frac{B-Y}{1-W_{B}} U_{max}\]
-\[V =\frac{R-Y}{1-W_{R}} V_{max}\]
-Equivalently, it is possible to built a matrix that represent the transformation by substituting values for constants and expressing the color component as a Vector, obtaining a matrix vector multiplication like the one below, that refers to the transformation matrix for BT.601 standard:
+\[U = \frac{B-Y}{1-W_{B}} U_{max} \;.\]
+\[V =\frac{R-Y}{1-W_{R}} V_{max} \;.\]
+Equivalently, it is possible to build a matrix that represents the transformation by substituting values for constants and expressing the color component as a vector, obtaining a matrix vector multiplication like the one below, that refers to the transformation matrix for BT.601 standard.
 \[
 \begin{pmatrix}
 Y\\
@@ -572,16 +579,17 @@ R\\
 G\\
 B\\
 \end{pmatrix}
+\;.
 \]
-The resulting values of Y, U and V will lie inside the respectively range of:
+The resulting values of Y, U and V will lie inside the respectively range of 
 \begin{center}
-$[0,1]$, $[-U_{max},U_{max}]$, $[-V_{max},V_{max}]$
+$[0,1]$, $[-U_{max},U_{max}]$, $[-V_{max},V_{max}] \;.$
 \end{center}
 
 
-The advantage of representing the transformation as a matrix and matrices operations is that it becomes easier to perform the proceed backward, from YUV to RGB color space.
+The advantage of representing the transformation as a matrix is that it becomes easier to perform the process backward, from YUV to RGB color space.
 
-Indeed, in order to convert a color specified in the YUV color space to a color in the RGB color space the inverse matrix of one above can be used, like the following:
+Indeed, in order to convert a color specified in the YUV color space to a color in the RGB color space the inverse matrix of one above can be used, like the following formula.
 \[
 toRGB^{-1} = \frac{1}{|toYUV|}
 \begin{pmatrix}
@@ -589,8 +597,9 @@ W_{R} & W_{G} & W_{B}\\
 -0.14713 & -0.28886 & U_{max}\\
 V_{max} & -0.51499& -0.10001\\
 \end{pmatrix}
+\;.
 \]
-Then, as it has been done before from RGB to YUV, the inverse matrix in multiplied with the vector that encode the color components in YUV color space, like the following:
+Then, as it has been done before from RGB to YUV, the inverse matrix in multiplied with the vector encoding the color components in YUV color space, like the following.
 \[
 \begin{pmatrix}
  R\\
@@ -604,19 +613,19 @@ Y\\
 U\\
 V\\
 \end{pmatrix}
+\;
 \]
-In the end, as it will be shown later on, in the Implementation section of this work, such YUV color components that are converted to RGB color space may end up resulting invalid, as outside the defined range $[0,1]$ of RGB color. Therefore they must be clamped between $0$ and $1$, in order to have correct and valid RGB color.
+At the end, as it will be shown later on, in the implementation of this work, such YUV color components that are converted to RGB color space may finally be wrong, as outside the defined range $[0,1]$ of RGB color. Therefore they must be clamped between $0$ and $1$, in order to have a correct and valid RGB color value.
 %\paragraph{From RGB to HSL and back}
 
 \pagebreak
 \subsection{Volume rendering} 
-This chapter makes a short introduction to different type of techniques and approaches to render a a 3-dimensional data, also known as volume and some fundamental concepts. Then, few sections will be reserved to a more in-depth explanation of some of the most common techniques along with advantages and disadvantages, in order to understand the reasons behind some decision that has been taken for this work. In the last section of this chapter, there will be a description of the current state-of-the-art volume rendering techniques used nowadays.
+This chapter gives a short introduction to different techniques and approaches to render a 3-dimensional data, also known as volume, and some fundamental concepts. Then, few sections will be reserved to a more in-depth explanation of some of the most common techniques along with advantages and disadvantages, in order to understand the reasons behind some decision that has been taken for this work. In the last section of this chapter, there will be a description of the current state-of-the-art volume rendering techniques used nowadays.
 \linespace
 
-Volume rendering is  computer graphics' topic that involves volumetric dataset as source. Fundamental concept in volume rendering is the voxel. 
+Volume rendering is a computer graphics' topic that involves volumetric datasets as source. Fundamental base of volume rendering is the voxel. 
 
-A voxel act as the basic unit for volumes, as pixels for 2-dimensional images.
-It represent a single value on a regular grid in 3-dimensional space (volume), and they can represent different values such as MRI and ultrasound samples or values stored in CT scans. Voxels position in space is not explicitly encoded in the voxel itself, instead it is inferred with respect to the other voxels in the grid forming the whole volume which position is define in space, as shown in Figure \ref{fig:voxel}. In contrast with points and polygons that also encode their positions. %TODO reference wiki or somenthing else 
+It represent a single value on a regular grid in 3-dimensional space (volume), and they can represent different values such as MRI and ultrasound samples or values acquired by CT scans. A voxel's position in space is not explicitly encoded in the voxel itself, instead it is inferred with respect to the other voxels in the grid forming the whole volume, as shown in Figure \ref{fig:voxel}. In contrast with points and polygons that also encode their positions. %TODO reference wiki or somenthing else 
 
 \begin{figure}[hbtp]
 \centering
@@ -625,36 +634,36 @@ It represent a single value on a regular grid in 3-dimensional space (volume), a
 \label{fig:voxel}
 \end{figure}
 
-There exists different ways to visualize and render a volumetric dataset such as x-Rays, tomography and such; they differ from each other in the way the volume is approached: directly or indirectly.
+There exist different ways to visualize and render a volumetric dataset such as x-rays, tomography etc. They differ from each other in the way the volume is approached: directly or indirectly.
 \linespace
 
-Indirect Volume rendering techniques, as the name implies, before the actual render of the volumetric dataset, they introduces an intermediate stage in which the source data in transformed, and then it is rendered by means of common techniques, such as rasterization et al; for this reason, such techniques are also known as surface rendering techniques.
-The main idea of those technique is to go through the volumes' voxels and determines if they belongs to a certain isosurface with a specified values. Therefore, they rely on differentiable functions.
+Indirect Volume rendering techniques, as the name implies, introduces before the actual render of the volumetric dataset an intermediate stage in which the source data in transformed, and then it is rendered by means of common techniques, such as rasterization et al; for this reason, such techniques are also known as surface rendering techniques.
+The main idea of those technique is to go through the voxels of the volume and determine if they belongs to a certain isosurface with a specified value. Therefore, they rely on differentiable functions \cite{levoy_1988:4}.
 
 
-Common techniques that belongs to the indirect volume rendering category whom reconstruct surfaces from volumetric data are:
+Common techniques that belongs to the indirect volumes rendering category whom reconstruct surfaces from volumetric data are:
 \begin{itemize}
 \item Contour tracing
 \item Marching cubes
 \item Marching tetrahedra
 \end{itemize}
 
-Nowadays, the last twos are known to be the most used indirect volume rendering techniques.
+Nowadays, the last two are known to be the most used indirect volume rendering techniques.
 They are often chosen due to their computational speed (\cite{volume_vis_5:1})
-and less storage space requirements, over plain implementations of the other techniques. However, they suffer of a main disadvantage that can't be completely ignored in the context of medical imaging as aid in diseases diagnosis or even in surgery rehearsal, whom are the main context of this work, that is the lack of and high level accuracy and precision; it doesn't means they are not valid at all, but by means of other approaches initially slower better results can be archived with respect to the patient condition stored in the source dataset.  
+and less storage space requirements, over plain implementations of the other techniques. However, they suffer of a main disadvantage that can't be completely ignored in the context of medical imaging as aid in diseases diagnosis or even in surgery rehearsal, which are the main context of this work, that is the lack of and high level accuracy and precision; it doesn't mean they are not valid at all, but by means of other approaches initially slower but better results can be archived with respect to the patient condition stored in the source dataset.  
 
-On the other side, we do have Direct Volume rendering technique which visualize the volumetric data, directly reading the sampled values stored into voxels and display them, without producing any intermediate surface, unlike indirect approaches do. 
+On the other side, we do have direct volume rendering technique which visualize the volumetric data, directly reading the sampled values stored into voxels and display them, without producing any intermediate surface, unlike indirect approaches do. 
 \linespace
 
-These techniques can be furthermore distinguished in image-based and object-based. Image-based techniques starts from the 2-dimensional view space and their computation is performed pixel by pixel.In contrast, object-based techniques' approach start from the objects stored into the volume. 
+These techniques can be furthermore distinguished in image-based and object-based. Image-based techniques start from the 2-dimensional view space and their computation is performed pixel by pixel.In contrast, object-based techniques' approach start from the objects stored into the volume. 
 
 There exists different, and very common, direct volume rendering techniques :
 \begin{itemize}
-\item Image-based approach:
+\item Image-based approach
 \begin{itemize}
 \item Ray casting
 \end{itemize}
-\item Object-based approach:
+\item Object-based approach
 \begin{itemize}
 \item Shear-Warp
 \item Splatting
@@ -662,19 +671,19 @@ There exists different, and very common, direct volume rendering techniques :
 \end{itemize}
 \end{itemize}
 
-One of the main disadvantage of these techniques is that, their computational speed is pretty low compared to the indirect volume rendering competitors. However, Ray casting especially, is able to often output better results in terms of source fidelity, and also because ray casting and the others direct volume rendering technique allows to visualize both the interiors and the exterior of the volume unlike the others approaches.
+One of the main disadvantage of these techniques is their poor computational speed compared to the indirect volume rendering competitors. However, ray casting especially, is able to often output better results in terms of source fidelity, and also because ray casting and the others direct volume rendering technique allows to visualize both the interiors and the exterior of the volume unlike the other approaches.
 
 \subsubsection{Surface rendering} %TODO 24
-This section will focus on the fundamental concepts of the common techniques that belongs to indirect volume rendering category. First a brief explanation of the Contour tracing algorithm, mentioned in the previous section, used during the early days of volume rendering in medical contexts. Then the core idea of Marching cube technique will be described, as it is one of the main competitor in his category used in state-of-the-art indirect volume rendering techniques, nowadays.
+This section will focus on the fundamental concepts of the common techniques that belongs to indirect volume rendering category. First a brief explanation of the contour tracing algorithm, mentioned in the previous section, used during the early days of volume rendering in medical contexts. Then the core idea of marching cube technique will be described, as it is one of the main competitor in his category used in state-of-the-art indirect volume rendering techniques, nowadays.
 \paragraph{Contour tracing}
 Contour tracing was one of the first approach studied in early days of medical imaging in the digital era and different techniques has been developed and proposed during, years each of which tried to solve some others lacks, such as :
 \begin{itemize}
-\item Square tracing
-\item Moore-Neighbor Tracing
-\item Radial Sweep
-\item Theo Pavlidis' Algorithm 
+\item Square tracing \cite{contour}
+\item Moore-Neighbor Tracing \cite{contour}
+\item Radial Sweep \cite{contour}
+\item Theo Pavlidis' Algorithm \cite{Pavlidis1982}
 \end{itemize}
-The differences between them lies in how the concept how adjacency is defined \cite{Ghuneim2007Mar}. Nevertheless, the underlying concept is shared among those algorithms.
+The major difference between them is the definition of adjacency or neighborhood \cite{Ghuneim2007Mar}. Nevertheless, the underlying concept is shared among those algorithms.
 \linespace
 
 The core idea behind contour tracing techniques is to identify and extract the boundaries of a given digital image; within the context of medical imaging and volume rendering means: identify different tissue/region of a given volumetric data, applying the algorithm for each slice that forms the volume, as shown in Figure \ref{fig:contouring2d}. 
@@ -690,12 +699,12 @@ The core idea behind contour tracing techniques is to identify and extract the b
 The concept can be described, in a very simplified and generic way, as a local operator %definire local operator
 applied to a single slice that build a polyline made of vertex by traversing the adjacent pixels in the 2-dimensional space of the slice, which should belong to the contour that defines a region of that slice, following a specific traversing order clockwise or counter-clockwise. 
 
-As most of the techniques in this field of studying, a threshold value guide defines the which pixels values must be considered and which one must be discarded.
+As most of the techniques in this field of research, defines a threshold value that guides which pixels values must be considered and which one must be discarded.
 
-Something that is worth to mention is that, even if the generality of contour tracing techniques approach proceed in clockwise direction, Theo Pavlidis in his proposed version decided to approach in a counter-clockwise manner and he also defined few initial restriction conditions with respect to how the starting point is chosen, as he imposed that a starting pixel can be choose if and only if its left adjacent neighbor doesn't belong to the same pixel pattern.
+Something that is worth to mention is that, even if the generality of contour tracing techniques proceed in clockwise direction, Theo Pavlidis in his proposed version decided to approach in a counter-clockwise manner and he also defined few initial restriction conditions with respect to how the starting point is chosen, as he imposed that a starting pixel can be choose if and only if its left adjacent neighbor doesn't belong to the same pixel pattern \cite{Ghuneim2007Mar}.
 \linespace
 
-In the end, those algorithms must undertake further steps to build the isosurface needed from a 2-dimensional polyline contour; these steps can be summarized as follow:
+At the end, those algorithms must undertake further steps to build the isosurface needed from a 2-dimensional polyline contour; these steps can be summarized as follow:
 \begin{itemize}
 \item Labeling by identification of different structures within the same slice, defined by the isovalue and sort them from the highest to the lowest order of characteristics.
 \item Tracing the contour from adjacent slices that represent the same object and connect them forming triangles.
@@ -703,29 +712,29 @@ In the end, those algorithms must undertake further steps to build the isosurfac
 \end{itemize}
 
 
-Contour tracing suffer of different problems that are related to the intrinsic  proceeding way of the algorithm.
+Contour tracing suffer from different problems that are related to the intrinsic  proceeding way of the algorithm.
 
 The first, non-negligible, problem is related to complex pixel patterns, such as the one that presents holes, as this techniques is not able to recognize holes at all, ending up ignoring them completely.
 
 The second problem is related to the contour density in each slice and the tracing step, previously mentioned; Sometimes there are a lot of different contour and therefore different object inside a single slice or there is an high variation of them between slices, therefore it is very difficult to trace contours from one slice to the other, so most of the computation time is spent connecting the vertices of triangles from different heights.
 \linespace
 
-In order to overcome these important failing at some point in time in 1987, a new technique has been proposed that still provides good results, as it has been describe in the next paragraph.
+In order to overcome these important pitfalls at some point in time in 1987, a new technique has been proposed that still provides good results, as it has been describe in the next paragraph \cite{Lorensen:1987:MCH:37402.37422}.
   
 
 \paragraph{Marching cubes}
-Marching cubes algorithm render the data set, sending through the volume cubes with different configuration whom while traversing it, they depict the actual volume shape. Indeed, the output served by Marching cubes algorithm is a polygonal mesh of an isosurface computed from a 3-dimensional discrete scalar dataset. It was first proposed and developed by E.Lorensen and H. E. Cline. The input volume is subdivided in a grid of cubes, then values that falls beyond the isosurface threshold are interpolated with respect to vertices of the grid of cubes and a pre-computed array of vertices configurations.
+Marching cubes algorithm renders the data set, sending through the volume cubes with different configuration who while traversing it, depict the actual volume shape. Indeed, the output served by marching cubes algorithm is a polygonal mesh of an isosurface computed from a 3-dimensional discrete scalar dataset. It was first proposed and developed by E.Lorensen and H. E. Cline. The input volume is subdivided in a grid of cubes, then values that fall beyond the isosurface threshold are interpolated with respect to vertices of the grid of cubes and a pre-computed array of vertices configurations.
 
 
 
-Those configurations are $256$ as $2^8 = 256$ and their purpose is to check for every cube of the grid, the correct configuration interpolating the grid vertex that falls into the isosurface. In this way, each time a configuration matches the corresponding interpolated vertex defined by the configuration are used to represent the surface.\\
-The marching cubes algorithm proceed can be summarize as follows \cite{SCHROEDER20053}:
+Those configurations are $256$ as $2^8 = 256$ and their purpose is to check for every cube of the grid, the correct configuration interpolating the grid vertex that falls into the isosurface. In this way, each time a configuration matches the corresponding interpolated vertex defined by the configuration is used to represent the surface.\\
+The marching cubes algorithm procedure can be summarize as follows \cite{SCHROEDER20053}:
 \begin{enumerate}
 \item Select a cell of the grid
 \item Compute the inside/outside state of each vertex of the cell.
 \item Create an index storing the state of each vertex in a separate bit
 \item Use the index to retrieve the corresponding edges from the lookup table of configurations.
-\item Linearly interpolate the founded edges to calculate the contour
+\item Linearly interpolate the selected edges to calculate the contour
 \item Compute the gradient
 \item Move to the next cell
 \end{enumerate}
@@ -739,12 +748,12 @@ The proposed algorithm from Cline and Lorensen exploiting rotational and reflect
 \label{fig:marchingcubes_configs}
 \end{figure}
 
-However, one of the main disadvantages is that it present some discontinuities and topological issues, due to some ambiguities in the trilinear interpolation of the cubes that occurs in scenarios where there aren't sufficient vertex to determine the correct surface triangulation \cite{Lorensen:1987:MCH:37402.37422}.
+However, one of the main disadvantages is that it presents some discontinuities and topological issues, due to some ambiguities in the trilinear interpolation of the cubes that occurs in scenarios where there aren't sufficient vertices to determine the correct surface triangulation \cite{Lorensen:1987:MCH:37402.37422}.
 
 Initially, marching cubes algorithm was protected by software patent, therefore an alternative was developed that didn't required any license and that solves the aforementioned ambiguity for some cubes configuration.
 
 \paragraph{Marching tetrahedra} works the same as marching cubes. However it solves the topological issues and discontinuities discussed before, giving in output almost always topological correct and watertight results.
-The basic idea, that in the end enchanted the results, is to improve the cubic configurations by making addition cuts breaking the cube into several tetrahedra.
+The basic idea, that in the end enhanced the results, is to improve the cubic configurations by making addition cuts breaking the cube into several tetrahedra \cite{Doi1991Jan}
 
 The advantage of using tetrahedra is that the are no more ambiguity with respect to the configurations. As only four vertices rather than eight are involved, the number of configuration determining the size of the lookup tables is much smaller. However, there two downsides of this approach:
 
@@ -753,19 +762,19 @@ The first  is that Marching tetrahedra produces more triangles that aren't alway
 The second is that an orientation of the tetrahedra must be defined and can produce bumps in the final produced surface,because of interpolation along the face diagonals.
 
 \subsubsection{Direct volume rendering} %TODO 25-26
-This section will describe, as it has been done in the previous section for indirect volume rendering techniques, direct volume rendering techniques. Briefly going from object-based direct techniques previously mentioned, such as Shear-Warp, Splatting and Texture-based, to image-based approach volume ray casting technique, with a deep explanation of the main concepts, its first proposed version and today still valid.
+This section will describe direct volume rendering techniques. Briefly going from object-based direct techniques previously mentioned, such as Shear-Warp, Splatting and Texture-based, to image-based approach volume ray casting technique, with a deep explanation of the main concepts, its first proposed version and today still valid.
 
-As already said there exists different type of algorithms to directly render a volumetric dataset, without going through an intermediate layer like a mesh.
+As already said there exists different types of algorithms to directly render a volumetric dataset, without going through an intermediate layer like a mesh.
 Furthermore, they can be divided int two categories: object-based or image-based, depending on the starting space, object space or view space.
 %TODO add volume integral
 %TODO add common steps definitions
 
-\paragraph{Shear-Warp} Shear-Warp was introduced by Lacroute \cite{Lacroute:1994:FVR:192161.192283}, this technique combines some of the advantages of both object-based and image-based algorithms. IT is very efficient because it combines the object-order traversal and the scan-line order sampling.
+\paragraph{Shear-Warp} Shear-Warp was introduced by Lacroute \cite{Lacroute:1994:FVR:192161.192283}, this technique combines some of the advantages of both object-based and image-based algorithms. IT is very efficient because it combines the object-order traversal and the scan-line order sampling \cite{PFISTER2005229}.
 
 
-It basically, project the volume from the object space to the image space in a way that the voxel grid is aligned with the viewing plane.
+It basically, projects the volume from the object space to the image space in a way that the voxel grid is aligned with the viewing plane.
 In order to archive this results, it applies different transformations in a specific order, also known as affine transformations.
-Therefore,the algorithm proceed can be summarize as follows:
+Therefore,the algorithm procedure can be summarize as follows:
 \begin{enumerate}
 \item \textbf{Shear:} Transform the volumetric data into sheared object space, by translating and re-sampling the voxels, according to the Shearing ($S_{par}$) transformation matrix. In case of perspective view, scale each slice according to $S_{persp}$.
 \item \textbf{Project (3D $\rightarrow$ 2D):} Composite the re-sampled slices following front-to-back order, applying the over operator (see Composition schemas section).
@@ -869,7 +878,7 @@ All the polygons are then , rendered and blended using common techniques, as alr
 
 
 %TODO show image from texure slicing
-The choice of which slice set has to be selected and used during the proceed is determined by the angle and position of the view vector with respect to the volume center origin.
+The choice of which slice set has to be selected and used during the procedure is determined by the angle and position of the view vector with respect to the volume center origin.
 
 In the end, the 2-D texture slicing technique can be summarized as follows:
 \begin{enumerate}
@@ -926,7 +935,7 @@ The basic idea that characterize ray casting is that starting from the view plan
 \label{fig:raycastingsteps}
 \end{figure}
 
-Therefore, in order to be able to traverse the volumetric data, as the first phase of the proceed of the algorithm, it is necessary to compute the entry and the exit point, in the 3-dimensional space, of each ray with respect to the position of the volume with respect to the world-space coordinates. %ref to word-space coordinates%
+Therefore, in order to be able to traverse the volumetric data, as the first phase of the procedure of the algorithm, it is necessary to compute the entry and the exit point, in the 3-dimensional space, of each ray with respect to the position of the volume with respect to the world-space coordinates. %ref to word-space coordinates%
 These exit and entry point, as will be described in the implementation chapter of this work, requires some collision detection calculation. 
 \linespace
 
@@ -935,7 +944,7 @@ The second step involves the sampling of the voxels inside the volume and this o
 Color and opacity are sampled from the volume data in order to compute the final output view image and these values are sampled as emission values stored into the voxels, usually in the range of a 8 bit gray scale, from 0 to 255.
 \linespace
 
-The next phase involves spending few more computational power in order to calculate a properly shadowed value of the color, from the previous step (Figure \ref{fig:raycastingsteps}.3). This is a very fundamental part of the proceed in the medical imaging context as it allows a good, otherwise useless, visualization of the dataset.
+The next phase involves spending few more computational power in order to calculate a properly shadowed value of the color, from the previous step (Figure \ref{fig:raycastingsteps}.3). This is a very fundamental part of the procedure in the medical imaging context as it allows a good, otherwise useless, visualization of the dataset.
 
 In order to achieve the needed fine looking result, different approach can be taken involving some volumetric shading technique to approximate the light integral, such as Blinn-Phong global illumination model and approximation algorithm.
 \linespace
@@ -954,7 +963,7 @@ There are two ways of compositing, back-to-front and front-to-back. They both ha
 On the other hand, front-to-back method requires more storage memory as additional variable are needed to save characteristics such as transparency.
 \linespace
 
-The volume ray casting technique proceed can be summarize as follows:
+The volume ray casting technique proceed as follows:
 \begin{enumerate}
 \item Define the number of ray according to the view screen size.
 \item Before casting, compute the starting and exiting point as 3-dimensional coordinates with respect to volume world-space position.
@@ -997,7 +1006,7 @@ therefore still visible.
 \subsection{Volume rendering state-of-the-art} 
 %TODO scrivere una migliore introduzione pro 500 e pro 1000
 
-In this section volume rendering techniques proceed and characteristics whom are used in state-of-the-art algorithms and systems deployed for rendering and creating interactive images of objects and phenomena represented as 3-dimensional data,within the context of medical imaging and scientific visualization in general. 
+In this section volume rendering techniques procedure and characteristics whom are used in state-of-the-art algorithms and systems deployed for rendering and creating interactive images of objects and phenomena represented as 3-dimensional data,within the context of medical imaging and scientific visualization in general. 
 
 Nowadays there exists different implementation of the previously described techniques that stands out in terms of output image quality in volume rendering. However, it is not only about high efficient software implementation, but also tangible hardware that is built to let the software part perfectly fits on and reach the best results.
 \linespace
@@ -1043,7 +1052,7 @@ As well as it predecessor VolumePro 500, it performs a triliniear interpolation 
 Another aspect that characterize VolumePro 1000 system is that Voxels can have up to four fields, each of them is associated with a lookup table. Those are organized in a set and used during the classification phase; they can be combined by means of a hierarchy of arithmetic-logic units as they are built in cascade.
 \linespace
 
-The shear image proceed can be divided in two parts: The first part operates like the standard shear-warp technique by stepping through one slice of the volume at a time, that is stored in the main memory. Then, it interpolates adjacent voxel slices to obtain new slices called z-interpolated samples. 
+The shear image procedure can be divided in two parts: The first part operates like the standard shear-warp technique by stepping through one slice of the volume at a time, that is stored in the main memory. Then, it interpolates adjacent voxel slices to obtain new slices called z-interpolated samples. 
 
 These resulting slices will appear to be organized in a grid parallel to the x and y dimensions of the volume, as no other interpolation took place before.
 \linespace
@@ -1084,7 +1093,7 @@ A full explanation of the different parts that are composing the algorithm will 
 The integration between the MATLAB environment and the C++ code will be describe focusing on single instructions needed to communicate from and to a MATLAB program.
 \linespace
 
-Then, the accelerated version will be presented and explained. A description of the proceed need to go from the basic version to the parallel one will be given, which shows the code transformations from the common programming model used for the basic version to the CUDA programming model. 
+Then, the accelerated version will be presented and explained. A description of the procedure need to go from the basic version to the parallel one will be given, which shows the code transformations from the common programming model used for the basic version to the CUDA programming model. 
 
 Description of the most crucial code part will be given that shows those transformations along whit whichever changes in underlying data structure involved.
 
@@ -1319,7 +1328,7 @@ Figure \ref{fig:cudacompiler}, shown the NVCC that processes a CUDA program at t
 \subsection{Architecture} 
 This work and actual implementation follows the previous work of Levoy about volume ray tracing, mainly.
 
-Figure \ref{fig:architecture} shows the algorithm architecture with respect to the entire ecosystem and how it interact with other MATLAB programs as well as the relationship with the accelerating CUDA framework. As can be seen, in order to build a broadly available rendering algorithm all the proceed is encapsulated inside a MEX function that will let users to include it inside every other MATLAB program that require a fast effective and real-time volume rendering algorithm, by passing the right required arguments and receiving the resulting output 2-dimensional image with the projected volumetric input dataset as expected from a volume ray casting algorithm  \cite{levoy_1988:4}.
+Figure \ref{fig:architecture} shows the algorithm architecture with respect to the entire ecosystem and how it interact with other MATLAB programs as well as the relationship with the accelerating CUDA framework. As can be seen, in order to build a broadly available rendering algorithm all the procedure is encapsulated inside a MEX function that will let users to include it inside every other MATLAB program that require a fast effective and real-time volume rendering algorithm, by passing the right required arguments and receiving the resulting output 2-dimensional image with the projected volumetric input dataset as expected from a volume ray casting algorithm  \cite{levoy_1988:4}.
 
 \begin{figure}[hbtp]
 \centering
@@ -1379,7 +1388,7 @@ Figure \ref{fig:steps} shows how the algorithm has been decomposed in different 
 \end{figure}
 
 \subsection{Basic volume ray casting} 
-In this section, the proceed steps showed before will be explained step-by-step describing all the techniques employed in each step in order to reach the goal behind this work.
+In this section, the procedure steps showed before will be explained step-by-step describing all the techniques employed in each step in order to reach the goal behind this work.
 Starting right after reading the input volume and the other input arguments the first step is to set up the bounding box around the volume.
 
 \paragraph{Bounding box}
@@ -1986,7 +1995,7 @@ In this implementation, due to volume ray casting procedure structure, the most 
 
 Figure \ref{fig:imagetogrid} illustrate the correlation between the output image pixel and the GPU's threads, where each pixel of the viewing image is correlated to a thread. 
 
-Therefore, as for every pixel a ray is created, a thread duty is to execute all the volume ray casting proceed: volume traversing of ray, voxels intensity sampled, shadows calculation and image composing for a single pixel.
+Therefore, as for every pixel a ray is created, a thread duty is to execute all the volume ray casting procedure: volume traversing of ray, voxels intensity sampled, shadows calculation and image composing for a single pixel.
 In this way, the most computationally expensive part of the algorithm is executed in parallel on the device threads.
 \linespace
 
