@@ -46,7 +46,7 @@ This work is published under the conditions of the
 \newcommand{\row}[1]{% inline row vector
   \begin{matrix}(#1)\end{matrix}%
 }
-\newcommand{\linespace}{\vspace{8pt}}
+\newcommand{\linespace}{\vspace{0pt}}
 
 \lstnewenvironment{cpp}[1][]
 {\linespace \lstset{language=C++,
@@ -91,13 +91,14 @@ University of Applied Sciences, Hagenberg
 
 \noindent
 \theauthor
-
+\pagebreak
+\section*{Abstract}
 \pagebreak
 \tableofcontents
 \pagebreak
 
-\section*{Abstract} 
-\addcontentsline{toc}{section}{Abstract}
+\section*{Introduction} 
+\addcontentsline{toc}{section}{Introduction}
 Medical image analysis plays a crucial role in scientific visualization and is an essential tool in many domain sciences such as medicine, biology, and the life sciences, physics, and engineering.
 
 Its primary aim is to give insight to specialists about data sets generated from magnetic resonance, computed tomography, and similar medical devices.
@@ -774,7 +775,7 @@ Furthermore, they can be divided int two categories: object-based or image-based
 
 It basically, projects the volume from the object space to the image space in a way that the voxel grid is aligned with the viewing plane.
 In order to archive this results, it applies different transformations in a specific order, also known as affine transformations.
-Therefore,the algorithm procedure can be summarize as follows:
+Therefore,the algorithm procedure can be summarize as follows, cf. Figure \ref{fig:shearwparring}
 \begin{enumerate}
 \item \textbf{Shear:} Transform the volumetric data into sheared object space, by translating and re-sampling the voxels, according to the Shearing ($S_{par}$) transformation matrix. In case of perspective view, scale each slice according to $S_{persp}$.
 \item \textbf{Project (3D $\rightarrow$ 2D):} Composite the re-sampled slices following front-to-back order, applying the over operator (see Composition schemas section).
@@ -787,14 +788,15 @@ Therefore,the algorithm procedure can be summarize as follows:
 \caption{ A volume is transformed to sheared object space for
 a parallel projection by translating each slice. The projection in
 sheared object space is simple and efficient}
+\label{fig:shearwparring}
 \end{figure}
 
-The shear-warping factorization can be described, mathematically speaking, as the factorization of the viewing transformation matrix as $M_{view}$ follows:
+The shear-warping factorization can be described, mathematically speaking, as the factorization of the viewing transformation matrix as $M_{view}$ follows.
 \[
-M_{view} = P \cdot S \cdot M_{warp}
+M_{view} = P \cdot S \cdot M_{warp} \;.
 \]
 
-The matrix $S$ that transform the volume into sheared object space can then have two forms, one for general parallel projection and one for perspective projections, as follows: 
+The matrix $S$ that transforms the volume into sheared object space can have two forms, one for general parallel projection and one for perspective projections, as follows: 
 \[
 S_{par}
 =
@@ -803,7 +805,7 @@ S_{par}
 0 & 1 & 0 & 0\\
 s_{x}&s_{y}& 1 & 0\\
 0& 0 &0 &1
-\end{pmatrix}
+\end{pmatrix} \;.
 \]
 \[
 S_{persp}
@@ -813,42 +815,42 @@ S_{persp}
 0 & 1 & 0 & 0\\
 s'_{x}&s'_{y}& 1 & s'_{w}\\
 0& 0 &0 &1
-\end{pmatrix}
+\end{pmatrix}\;.
 \]
-The reason why Shear-warp is a very fast techniques and is also used in state-of-the-art direct volume rendering algorithm, is due to some characteristics of sheared object space in which the slices of the volume data are transformed to.
+The reason why Shear-warp is a very fast techniques and is also used in state-of-the-art direct volume rendering algorithm, is due to some characteristics of the sheared object space in which the slices of the volume data are transformed to.
 These properties are the following:
 \begin{itemize}
 \item The scan lines \cite{jack_tsatsulin_2002} of pixels in the intermediate image are parallel to scan lines of voxels in the volume.
 \item All voxels in a given slice are scaled by the same factor. Furthermore, if no perspective transformation is involved, all voxels have the scale factor.
 \end{itemize}
-Therefore, the composition is simplified a lot, as there exists a one-to-one mapping between voxels and intermediates pixels, this means that both voxels scan lines and pixel scan lines of the intermediate image can be traverse at the same time, following scan line order.
+Therefore, the composition is simplified a lot, as there exists a one-to-one mapping between voxels and intermediates pixels, this means that both voxels' scan lines and pixels' scan lines of the intermediate image can be traversed at the same time, following scan line order.
 
-\paragraph{Splatting} Splatting is another well known direct volume rendering technique that belongs that belongs to the object-base category. It can be summarize as an algorithm that distribute values of the volume data onto a view plane with different shape and following a distribution function.
+\paragraph{Splatting} Splatting is another well known direct volume rendering technique that belongs to the object-base category. It can be summarize as an algorithm that distribute values of the volume data onto a view plane with different shape and following a distribution function \cite{PFISTER2005229}.
 \linespace
 
-The basic idea is to traverse the slice in a front-to-back manner and for each voxel compute which pixel of the image plane is covered by the voxel \textit{"footprint"} resulting from \textit{"throwing"} voxels toward the image plane; such \textit{"footprint"}, are 3D interpolation kernels and can have different shapes and opacity, usually they are similar to the Gaussian function; there exists different possible choices, but they don't give satisfying result as Gaussian.
+The basic idea is to traverse the slice in a front-to-back manner and for each voxel compute which pixel of the image plane is covered by the voxel \textit{"footprint"} resulting from \textit{"throwing"} voxels toward the image plane; such \textit{"footprint"}, are 3D interpolation kernels and can have different shapes and opacity, usually they are similar to the Gaussian function; there exist different possible choices too, but they don't give satisfying result as Gaussian.
 
-The Gaussian kernel is defined in 3-dimensional space, by the following formula:
+The Gaussian kernel is defined in 3-dimensional space, by the following formula.
 \linespace
 \begin{center}
-\scalebox{1.25}{
+\scalebox{1.5}{
 $
-G_{3D}(\vec{x};\sigma) = \frac{1}{(\sqrt{2 \pi} \sigma)^3}e^{\frac{|\vec{x}|^2}{2 \sigma ^2}}
+G_{3D}(\vec{x};\sigma) = \frac{1}{(\sqrt{2 \pi} \sigma)^3}e^{\frac{|\vec{x}|^2}{2 \sigma ^2}} \;.
 $
 }
 \end{center}
 \linespace
-The algorithm can be summarize as follow (Figure \ref{fig:splattingfootprints}):
+The algorithm can be summarize as follow, cf. Figure \ref{fig:splattingfootprints}:
 \begin{enumerate}
 \item For each voxel in each slice add a corresponding 3D interpolation kernel.
-\item For each voxel add the corresponding kernel to a 2-dimensional bugger plane, known as buffer-sheet.
+\item For each voxel add the corresponding kernel to a 2-dimensional buffer plane, known as buffer-sheet.
 \item Accumulate the buffer-sheet values into the compositing buffer, the final output image. 
 \end{enumerate}
 
 \begin{figure}[hbtp]
 \centering
 \includegraphics[scale=0.6]{images/splattingfootprints.png}
-\caption{Voxels' kernels are beign thrown from the object space to the screen, and then accumulatate(gray area) to produce the final result}
+\caption{Voxels' kernels are thrown from the object space to the screen, and then accumulatate(gray area) to produce the final result}
 \label{fig:splattingfootprints}
 \end{figure}
 
@@ -856,16 +858,16 @@ The algorithm can be summarize as follow (Figure \ref{fig:splattingfootprints}):
 These techniques present some advantages: It is quite fast because interpolation is operated in 2-dimensional space and can be easily parallelized.
 
 
-However, there are also different disadvantages: When to kernels overlaps, aliasing occurs leaving gaps on the output image; When zoomed in, the final image appears to be blurred, as the Gaussian function cuts away higher frequencies.
+However, there are also some disadvantages: When kernels overlap, aliasing occurs leaving gaps on the output image; When zoomed in, the final image appears to be blurred, as the Gaussian function cuts away higher frequencies.
 
-\paragraph{Texture-based} Texture-based techniques are quite famous because they allows to exploit existing hardware capabilities and rendering techniques. There exists to type of texture-based algorithm: 2-D texture slicing and 3-D texture slicing. However, 2-D texture still outperform the latter for large volume and that's the reason why 3-D texture slicing will not be inside the focus of this explanation, as the main objective of this works is to handle large data set efficiently.
+\paragraph{Texture-based} Texture-based techniques are quite famous because they allow to exploit existing hardware capabilities and rendering techniques. There exists two type of texture-based algorithm: 2-D texture slicing and 3-D texture slicing. However, 2-D texture still outperform the latter for large volume and that's the reason why 3-D texture slicing will not be inside the focus of this explanation, as the main objective of this work is to handle large data set efficiently \cite{PFISTER2005229}.
 
 
-The core concept of 2-D texture is to create slices of the volume, create polygons out of them and take advantage of existing implemented funcionality on graphics hardware for interpolation and compositing, such as: Rasterization, Texturing and Blending, available in almost all modern GPUs.
+The core concept of 2-D texture is to create slices of the volume, create polygons out of them and take advantage of existing implemented functionality on graphics hardware for interpolation and compositing, such as: rasterization, texturing and blending, available in almost all modern GPUs.
 \linespace
 
-The simplest implementation of 2-D texture slicing involves storing three different set of slices, one per each 2-dimensional plane of the coordinate system (XY,YZ,XZ) and it requires interpolating the volume to get these sets, Figure \ref{fig:slicingset2dtexture}.
-The second step is to load each 2D slice of a set into the texture memory buffer;  Simple squared (Four vertices) polygons are created for each slice and the corresponding slice texture stored in the buffer is applied by means of mapping texel \footnote{A texel, texture element, or texture pixel is the fundamental unit of a texture map,\cite{glassner1989an} used in computer graphics.} coordinates to vertex coordinates.
+The simplest implementation of 2-D texture slicing involves storing three different sets of slices, one per each 2-dimensional plane of the coordinate system (XY,YZ,XZ) and it requires interpolating the volume to get these sets, Figure \ref{fig:slicingset2dtexture}.
+The second step is to load each 2D slice of a set into the texture memory buffer;  Simple squared (four vertices) polygons are created for each slice and the corresponding slice texture stored in the buffer is applied by means of mapping texel \footnote{A texel, texture element, or texture pixel is the fundamental unit of a texture map,\cite{glassner1989an} used in computer graphics.} coordinates to vertex coordinates.
 
 All the polygons are then , rendered and blended using common techniques, as already mentioned, such as rasterization and blending provided for example by OpenGL or other computer graphics libraries
 
@@ -878,12 +880,12 @@ All the polygons are then , rendered and blended using common techniques, as alr
 
 
 %TODO show image from texure slicing
-The choice of which slice set has to be selected and used during the procedure is determined by the angle and position of the view vector with respect to the volume center origin.
+The choice which slice set has to be selected and used during the procedure is determined by the angle and position of the view vector with respect to the volume center origin.
 
-In the end, the 2-D texture slicing technique can be summarized as follows:
+Finally, the 2-D texture slicing technique can be summarized as follows:
 \begin{enumerate}
 \item Create slices sets one for each 2-dimensional plane : XY, YZ, XZ.
-\item Depending of the viewing angle and position, choose the closest sets of slices (the ones that require less affine transformations to be perpendicular to the view)
+\item Depending on the viewing angle and position, choose the closest sets of slices, corresponding to the ones that require less affine transformations to be perpendicular to the view.
 \item For each slice, store the values as separate textures in the texture buffer of the graphics device.
 \item Create one polygon for each slice in the set.
 \item Map texture coordinates to four polygon vertices
@@ -891,21 +893,21 @@ In the end, the 2-D texture slicing technique can be summarized as follows:
 \end{enumerate}
 \linespace
 
-The main advantage of this approach is that it exploit graphics hardware broad rendering capacity and already available algorithms. However, there are few major disadvantages: 
+The main advantage of this approach is that it exploit graphics hardware's broad rendering capacity and already available algorithms. However, there are few major disadvantages: 
 
-The first one is the texture buffer memory, that can become a bottleneck of the algorithm as it can be saturated by very large volume data set; 
+The first one is the texture buffer memory, that may become a bottleneck of the algorithm as it can be overflowed by very large volume data set; 
 
-The other problem becomes evident when the viewing angle is moved to 45 degree with respect the current selected set of slices, because it is required to switch to another set and apply new transformations to made it perpendicular again.
+The other problem becomes evident when the viewing angle is moved to 45 degrees with respect the current selected set of slices, because it is required to switch to another set and apply new transformations to made it perpendicular again.
 
 
-Last but not least disadvantage is the needs of three different sets of slices that requires additional storing memory and a preliminary step of interpolation of the volume.
+Last but not least disadvantage is the needs of three different sets of slices that require additional storing memory and a preliminary step of interpolation of the volume.
 
 \paragraph{Volume Ray casting}
 The most known direct volume rendering algorithm is Volume Ray casting,a first version along with an implementation has been proposed by \cite{levoy_1990:5}.
 Levoy introduced Volume ray casting as a ray tracing technique involving volumetric data set that is not surface-based. However, the naming convention is evolved as the time comes, separating the two techniques.
 \linespace
 
-Indeed, the core concept is very similar to the one used in the ray tracing technique beside that in ray tracing multiple types of ray are sent, known as primary rays, secondary rays and so on, based on the source from which they are generated, and another very clear difference is that, ray tracing deals with triangles, quads and polygon in general, as already said, Volume ray casting deals with volumetric dataset composed by voxels, instead.
+Indeed, the core concept is very similar to the one used in the ray tracing technique beside that in ray tracing multiple types of rays are sent, known as primary rays, secondary rays and so on, based on the source from which they are generated. Another very clear difference is that, ray tracing deals with triangles, quads and polygon in general, as already mentioned, Volume ray casting deals with volumetric dataset composed by voxels, instead.
 
 
 \begin{figure}[hbtp]
@@ -915,18 +917,18 @@ Indeed, the core concept is very similar to the one used in the ray tracing tech
 \label{fig:levoyraycasting}
 \end{figure}
 
-The objective of the volume ray casting technique is to transform a 3-dimensional volumetric dataset in a 2-dimensional projection of the latter in the form of digital image. The proposed version by Levoy is characterized by a pipeline that starts from the voxels' values then applies two operations: the first one that samples the intesity values of voxels; the second one that \textit{classify} voxels' opacity, and in the end it composes these two values into the final output image, as can be seen in Figure \ref{fig:levoyraycasting}.
+The objective of the volume ray casting technique is to transform a 3-dimensional volumetric dataset in a 2-dimensional projection of the latter in the form of an image. The proposed version by Levoy is characterized by a pipeline that starts from the voxels' values then applies two operations: the first one that samples the intensity values of voxels; the second one that classify voxels' opacity. In the end it composes these two values into the final output image, as can be seen in Figure \ref{fig:levoyraycasting}.
 \linespace
 
-Therefore,a modern adaptation of the Volume ray casting technique can designed as the decomposition of the Levoy's version in four linear different steps (Figure \ref{fig:raycastingsteps}) %TODO state wikipedia
+Therefore,a modern adaptation of the Volume ray casting technique can be designed as the decomposition of the Levoy's version in four linear different steps, cf. Figure \ref{fig:raycastingsteps} %TODO state wikipedia
 : cast and traverse, sample color and opacity, compute shadow and store the final result in a 2D view plane, that represent the final output image.
 
 
 
-The starting point of the algorithm is the observer view point, or the camera center point as in development environment such as OpenGL or similar, for this reason, it is clear that ray casting is a pure image-based volume rendering technique.
+The starting point of the algorithm is the observer viewpoint, or the camera center point as in a development environment such as OpenGL or similar. Due to this reason, it is clear that ray casting is a pure image-based volume rendering technique.
 \linespace
 
-The basic idea that characterize ray casting is that starting from the view plane, one ray is cast forward and through the volume (Figure \ref{fig:raycastingsteps}.1); as defined by Levoy, those rays should be parallel to each other.
+The basic idea that characterizes ray casting is that it starts from the view plane. Several rays are cast forward and through the volume, cf. Figure \ref{fig:raycastingsteps}.1; as defined by Levoy, those rays should be parallel to each other.
 
 \begin{figure}[hbtp]
 \centering
@@ -935,7 +937,7 @@ The basic idea that characterize ray casting is that starting from the view plan
 \label{fig:raycastingsteps}
 \end{figure}
 
-Therefore, in order to be able to traverse the volumetric data, as the first phase of the procedure of the algorithm, it is necessary to compute the entry and the exit point, in the 3-dimensional space, of each ray with respect to the position of the volume with respect to the world-space coordinates. %ref to word-space coordinates%
+Therefore, in order to be able to traverse the volumetric data, at the first phase of the process of the algorithm, it is necessary to compute the entry and the exit point, in the 3-dimensional space, of each ray with respect to the position of the volume with respect to the world-space coordinates. %ref to word-space coordinates%
 These exit and entry point, as will be described in the implementation chapter of this work, requires some collision detection calculation. 
 \linespace
 
@@ -944,38 +946,37 @@ The second step involves the sampling of the voxels inside the volume and this o
 Color and opacity are sampled from the volume data in order to compute the final output view image and these values are sampled as emission values stored into the voxels, usually in the range of a 8 bit gray scale, from 0 to 255.
 \linespace
 
-The next phase involves spending few more computational power in order to calculate a properly shadowed value of the color, from the previous step (Figure \ref{fig:raycastingsteps}.3). This is a very fundamental part of the procedure in the medical imaging context as it allows a good, otherwise useless, visualization of the dataset.
+The next phase involves spending few more computational power in order to calculate a properly shadowed value of the color, from the previous step, cf. Figure \ref{fig:raycastingsteps}.3. This is a very fundamental part of the procedure in the medical imaging context as it allows a good visualization of the dataset.
 
-In order to achieve the needed fine looking result, different approach can be taken involving some volumetric shading technique to approximate the light integral, such as Blinn-Phong global illumination model and approximation algorithm.
+In order to achieve the needed fine looking result, different approaches can be taken involving some volumetric shading technique to approximate the light integral, such as Blinn-Phong global illumination model and approximation algorithm \cite{levoy_1988:4}.
 \linespace
 
-In the end, the final result is store into a 2-dimensional image by means of compositing all the values sampled and transformed during the previous steps, into one single value per pixel,as shown in Figure \ref{fig:raycastingsteps}.4.
+In the end, the final result is stored into a 2-dimensional image by means of compositing all the values sampled and transformed during the previous steps, into one single value per pixel,as shown in Figure \ref{fig:raycastingsteps}.4.
 
 Usually such values are store as vectors that belongs to the RGB color space%ref to rgb chapter%
 however as already seen in the color space chapter there exists different and more appropriate color space that doesn't encode the illumination inside the color itself.
 \linespace
 
-In order to compose such values there exists different operators that can be applied. The most common one is the over operator proposed by Porter%cite porter
- because it is also capable of dealing and preserving semi-transparency voxels values according to their opacity. More of these operators are describe in the Composition schemas section.
+In order to compose such values there exist different operators that can be applied. The most common one is the over operator proposed by Porter because it is also capable of dealing and preserving semi-transparency voxels values according to their opacity. More of these operators are describe in the Composition schemas section \cite{Porter1984Jan}.
 \linespace
 
-There are two ways of compositing, back-to-front and front-to-back. They both have their pros and cons: back-to-front is the most simple method, however it is also the most expensive one in terms of computational requirements,because it doesn't allows any kind of optimization as all the voxels, from the least visible to the closest and visible one, must be accounted.
+There are two ways of compositing, back-to-front and front-to-back. Both, they have their advantages and disadvantages. The back-to-front method is the most simple one. However it is also the most expensive in terms of computational requirements. It doesn't allows any kind of optimization as all the voxels, from the least visible to the closest and visible one, must be accounted.
 On the other hand, front-to-back method requires more storage memory as additional variable are needed to save characteristics such as transparency.
 \linespace
 
 The volume ray casting technique proceed as follows:
 \begin{enumerate}
-\item Define the number of ray according to the view screen size.
+\item Define the number of rays according to the view screen size.
 \item Before casting, compute the starting and exiting point as 3-dimensional coordinates with respect to volume world-space position.
 \item For each pixel of the view screen cast a ray through the volumetric data set.
-\item At a constant step, sample voxels values of color and opacity and store them into the respective ray.
+\item At a constant step, sample voxels' values of color and opacity and store them into the respective ray.
 \item Transform each of these value by means of volumetric shading technique
 \item Compose the final result back-to-front or front-to-back applying a chosen operator.
 \end{enumerate}
 
-Ray casting has different advantages, as it is simple and easy to implement in its very basic version, it allows different degrees of freedom in choosing which method or algorithm should be used during the different phases and its final result doesn't suffer of any artefacts that are present with other techniques instead.
+Ray casting has different advantages, as it is simple and easy to implement in its very basic version, it allows different degrees of freedom in choosing which method or algorithm should be used during the different phases and its final result doesn't suffer from any artefacts that are present with other techniques instead.
 
-However, there is a major cons while using this technique: its basic implementation is very slow and poor in terms of efficiency. This problem is the reason why it is not yet used in state-of-the-art medical imaging techniques even  it does produces very good results.
+However, there is a major disadvantage while using this technique: its basic implementation is very slow and poor in terms of efficiency. This problem is the reason why it is not yet used in state-of-the-art medical imaging techniques even if it does produces very good results.
 \linespace
 
 The aim of this work, as already stated, is exactly to build starting from scratch, a volume ray casting algorithm that can compete with nowadays state-of-the-art competitors exploiting modern graphics devices.
@@ -984,21 +985,22 @@ The aim of this work, as already stated, is exactly to build starting from scrat
 %rifrasare
 In this section the different number of composition schemes will be described and explained for the sake of completeness. that are used during the process of direct volume rendering and especially fundamental for the volume ray casting technique.
 
-There exists a number of different composition schemes that can be used:
+There exists a number of different composition schemes that can be used \cite{KAUFMAN2005127}:
 \begin{itemize}
-\item Maximum intensity projection (MIP)
-\item First hit
-\item Accumulate
-\item Average
+\item Maximum intensity projection (MIP).
+\item First hit.
+\item Accumulate.
+\item Average.
 \end{itemize}  
 %inserire immagine
-All of the above treat the sampled value of the voxel in different way. However they are used to extract the isosurfaces and to render them. There are not advantages or disadvantages on using one method or the other, because they are used to archive different results in terms of final image.
-\paragraph{Maximum intensity projection} Maximum intensity projection is often used for magnetic resonance angiograms or to extract vessel structures from CT or MRT scans. For rendering, it uses the greatest value sampled from the ray and the final result can be seen in the Figure. 
+All of the above treats the sampled value of the voxel in a different way. However, they are used to extract the isosurfaces and to render them. There are no advantages or disadvantages of using one method or the other because they are used to archive different results in terms of the final image.
+
+\paragraph{Maximum intensity projection} Maximum intensity projection is often used for magnetic resonance angiograms or to extract vessel structures from CT or MRI scans. For rendering, it uses the highest value sampled from the ray.
 
 %add image
-\paragraph{First hit} First hit composite method works by means of using the sampled scalar value that is higher that a defined threshold limit. Then, the isosurface is extracted and rendered.
+\paragraph{First hit} First hit composite method works by means of using the sampled scalar value that is higher than a defined threshold limit. Then, the isosurface is extracted and rendered.
 
-\paragraph{Accumulate} Accumulate compositing method is similar to the over operator. It works accumulating the intensity Color until enough opacity is collected. The final result will shown also transparent layer whom opacity is above 0 and 
+\paragraph{Accumulate} Accumulate compositing method is similar to the over operator. It works accumulating the intensity color until enough opacity is collected. The final result will show also transparent layer whose opacity is above 0 and 
 therefore still visible.
 
 \paragraph{Average} Average produces essentially the same picture of X-ray. Additionally, it does not take into account any opacity value.
@@ -1006,32 +1008,32 @@ therefore still visible.
 \subsection{Volume rendering state-of-the-art} 
 %TODO scrivere una migliore introduzione pro 500 e pro 1000
 
-In this section volume rendering techniques procedure and characteristics whom are used in state-of-the-art algorithms and systems deployed for rendering and creating interactive images of objects and phenomena represented as 3-dimensional data,within the context of medical imaging and scientific visualization in general. 
+In this section are described volume rendering techniques' procedure and characteristics, whose are state-of-the-art algorithms and systems deployed for rendering and creating interactive images of objects and phenomena represented as 3-dimensional data, within the context of medical imaging and scientific visualization in general. 
 
-Nowadays there exists different implementation of the previously described techniques that stands out in terms of output image quality in volume rendering. However, it is not only about high efficient software implementation, but also tangible hardware that is built to let the software part perfectly fits on and reach the best results.
+Nowadays, there exists different implementation of the previously described techniques that stands out in terms of output image quality in volume rendering. However, it is not only about high efficient software implementation, but also physical hardware that is built to let the software part perfectly fit to reach the best results.
 \linespace
 
-The first system worth mentioning is VolumePro 500, built by Mitsubishi Electric company in 1999 based on the already existing architecture known as Cube-4. The system exploit the power capability of the shear-warping techniques with standard factorization to archive rendering of $256^3$ renders or smaller volumes at 30 frames per second  \cite{Pfister:1999:VRR:311535.311563}. 
+The first system worth mentioning is VolumePro 500, built by Mitsubishi Electric company in 1999 based on the already existing architecture known as Cube-4. The system exploits the power capability of the shear-warping techniques with standard factorization to archive rendering of $256^3$ renders or smaller volumes at 30 frames per second  \cite{Pfister:1999:VRR:311535.311563}. 
 
 
-The system was subsequently acquired by TeraRecon Inc. which improved it and then release the VolumePro 1000 system. This enchanted version is a single chip for real-time volume rendering capable of processing volume data at a rate of $10^9$ samples per second, using a novel technique called Shear-Image order ray casting, that inherits the ray-per-pixel casting method of image-based ray casting technique, but introduces a new intermediate sample space in which the axes are sheared with respect to the image place(hence the name shear-image order). 
+The system was subsequently acquired by TeraRecon Inc. which improved it and then released the VolumePro 1000 system. This enhanced version is a single chip for real-time volume rendering capable of processing volume data at a rate of $10^9$ samples per second, using a novel technique called Shear-Image order ray casting, that inherits the ray-per-pixel casting method of image-based ray casting technique, but introduces a new intermediate sample space in which the axes are sheared with respect to the image place, hence the name shear-image order. 
 \linespace
 
-Both systems deploys a highly optimized memory address interface that enables efficiently read blocks and axis-aligned slices of voxels without wasting any more storage space \cite{Wu:2003:SOR:641480.641510}.
-For the sake of clarity VolumePro 500 will not be discussed, instead a description of his successor VolumePro 1000 will be given along with its adopted approach, as they can be of much more interest for the readers and also because as the latter is the result of improvements of the first one, it is a better candidate to represent state-of-the-art implement in the direct volume rendering category. 
+Both systems deploy a highly optimized memory address interface that enables efficiently read blocks and axis-aligned slices of voxels without wasting any more storage space \cite{Wu:2003:SOR:641480.641510}.
+For the sake of clarity VolumePro 500 will not be discussed, instead a description of his successor VolumePro 1000 will be given along with its adopted approach, as they can be of much more interest for the readers and also because as the latter is the result of improvements of the first one, it is a better candidate to represent state-of-the-art implementation in the direct volume rendering category. 
 
 
 %Another technology currently deployed as state-of-the-art volume rendering and real-time visualization is based on the well known Marching cubes technique and it is called VESTA. It belongs to 
 %TODO search something about VESTA for surface exctracting algorithm
-\paragraph{VolumePro 1000} Volume Pro 1000 is developed and improved by TeraRecons Inc. which released the first version of the system in 2002.TeraRecons release is the successor of Volume Pro 500 which was built  the company Mitsubishi Electric and release it in 1999, improving an already existing architecture known as Cube-4, developed at SUNY Stony Brook.
+\paragraph{VolumePro 1000} Volume Pro 1000 is developed and improved by TeraRecons Inc. which released the first version of the system in 2002. TeraRecons release is the successor of Volume Pro 500 which was built  the company Mitsubishi Electric and release it in 1999, improving an already existing architecture known as Cube-4, developed at SUNY Stony Brook.
 \linespace
 
 The VolumePro 1000 system \cite {Wu:2003:SOR:641480.641510}
-uses a novel shear-image order ray-casting approach (Figure \ref{fig:shearimageorder}) \cite{PFISTER2005229}.
- Firstly, Volume Pro architecture deploy a special memory address arithmetic known as 3D skewing, as already said, let the system save storage memory. 
+uses a novel shear-image order ray-casting approach cf. Figure \ref{fig:shearimageorder}.
+ Firstly, Volume Pro architecture deploy a special memory address arithmetic known as 3D skewing, as already said, let the system save storage memory \cite{PFISTER2005229}. 
 \linespace
 
-The core idea is to casts rays directly through centers of pixels, as standard ray casting technique. However, it keeps the set of slices aligned to the base plane, very similar to 2D texture method. The 3D viewing transformation, or affine transformation, used as part of the base concept is decomposed in two different explicit matrices: one that transform from voxel coordinates space to an intermediate coordinate system called sample space; the second one that transform the depth values of the sampled points to reflect their distance from the image plane \cite{PFISTER2005229}.
+The core idea is to cast rays directly through centers of pixels, as standard ray casting technique. However, it keeps the set of slices aligned to the base plane, very similar to 2D texture method. The 3D viewing transformation, or affine transformation, used as part of the base concept is decomposed into two different explicit matrices: one that transforms from voxel coordinates space to an intermediate coordinate system called sample space; the second one that transforms the depth values of the sampled points to reflect their distance from the image plane \cite{PFISTER2005229}.
 
 \begin{figure}[hbtp]
 \centering
@@ -1046,10 +1048,10 @@ These two transformation enables Volume Pro 1000 to produce final images that do
 Therefore it produces images that are of higher quality than the ones produced by traditional shear-warping, like the one used in VolumePro 500 instead. %TODO show figure 11.17
 \linespace
 
-As well as it predecessor VolumePro 500, it performs a triliniear interpolation of the volume data and computes the gradient vector in hardware to prevent undersampling and artifacts popping out. It does so also reconnecting to the work of Rezk-Salama on 2D texture slicing, as it is possible to generate additional interpolated slices between original voxel an shift them with sub-pixel accuracy, artifacts keeping, in this way, ray and sample spacing constant \cite{PFISTER2005229}.
+As well as its predecessor VolumePro 500, it performs a trilinear interpolation of the volume data and computes the gradient vector in hardware to prevent undersampling and artifacts popping out. Similar to the work of Rezk-Salama on 2D texture slicing, VolumePro 1000 interpolate original voxels with additional slices generated by shifting original ones with sub-pixel accuracy. This method avoids artifacts while keeping ray's spacing and sample spacing constant \cite{PFISTER2005229}.
 
 
-Another aspect that characterize VolumePro 1000 system is that Voxels can have up to four fields, each of them is associated with a lookup table. Those are organized in a set and used during the classification phase; they can be combined by means of a hierarchy of arithmetic-logic units as they are built in cascade.
+Another aspect that characterizes VolumePro 1000 system is that voxels can have up to four fields, each of them is associated with a lookup table. Those are organized in a set and used during the classification phase; they can be combined by means of a hierarchy of arithmetic-logic units as they are built in cascade.
 \linespace
 
 The shear image procedure can be divided in two parts: The first part operates like the standard shear-warp technique by stepping through one slice of the volume at a time, that is stored in the main memory. Then, it interpolates adjacent voxel slices to obtain new slices called z-interpolated samples. 
@@ -1057,16 +1059,16 @@ The shear image procedure can be divided in two parts: The first part operates l
 These resulting slices will appear to be organized in a grid parallel to the x and y dimensions of the volume, as no other interpolation took place before.
 \linespace
 
-The second part, traverse each of the new generate slice of z-interpolated sampled value. It enumerates the sample point on the rays that intersect with the slice and it computes the color and the opacity value of each one of the z-interpolated samples. It also associate a depth values to measure the distance from the sample to the eye and are used to embed polygons in the rendered images.
+The second part, traverse each of the new generate slice of z-interpolated sampled value. It enumerates the sample point on the rays that intersect with the slice and it computes the color and the opacity value of each one of the z-interpolated samples. It also associates a depth value to measure the distance from the sample to the eye and are used to embed polygons in the rendered images.
 
 
 Finally those computed values are accumulated along the respective rays and a rendering of the volume is produced and stored directly on the image plane.
 \linespace
 
-As shading technique, in VolumePro 1000  Phong shading illumination model is used, trying to ensure a correct gradient, and Compositing is made by means of alpha blending maximum intensity projection like  VolumePro 500, but its hardware also supports early ray termination that let it increase  its performance.
+As shading technique, in VolumePro 1000  Phong shading illumination model is used, trying to ensure a correct gradient, and compositing is made by means of alpha blending maximum intensity projection like  VolumePro 500, but its hardware also supports early ray termination that let increase  its performance.
 
 \linespace
-Part of this work is to be able to built a fully image-based algorithm based on the ray casting technique which reaches the degree of efficiency and quality in term of execution speed and output image quality similar to the ones reached when deploying VolumePro 1000. In the next section a fully detailed description of the architecture, technologies and concepts used in an attempt to reach such results.
+Part of this work is to be able to built a fully image-based algorithm based on the ray casting technique which reaches the degree of efficiency and quality in terms of execution speed and output image quality similar to the ones reached when deploying VolumePro 1000. In the next section, a fully detailed description of the architecture, technologies and concepts behind the implementation part of this work ,in an attempt to reach such results, is presented.
 \pagebreak
 \section{Renderer implementation} 
 This work focuses on building a volume rendering algorithm that can exploit the power available on graphics hardware, through parallelization. Furthermore, the objective is to distribute such algorithm in an environment that is regularly used in research and academic fields, in order to simply the integration in other systems whom need an efficient volume renderer.
@@ -1103,7 +1105,7 @@ MATLAB, that stands for matrix laboratory, is a multi-paradigm numerical computi
 It is an integrated development environment which widely use in academic field, due to its power and enormous number of functionality that are available with the core version but whom rocket-up exponentially with the numerous plug-ins.
 
 A MATLAB application is built using the MATLAB scripting language and the Command Window is usually used as an interactive mathematical shell or to execute MATLAB code.
-%ref https://en.wikipedia.org/wiki/MATLAB
+%TODO ref https://en.wikipedia.org/wiki/MATLAB
 \linespace
 
 One of the most interesting and useful feature of MATLAB, with respect to this work, is the MEX file.
