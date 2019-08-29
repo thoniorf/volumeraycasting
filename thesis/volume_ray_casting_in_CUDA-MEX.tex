@@ -47,7 +47,7 @@ This work is published under the conditions of the
   \begin{matrix}(#1)\end{matrix}%
 }
 \newcommand{\linespace}{\vspace{0pt}}
-
+\newcommand{\myparagraph}[1]{\paragraph{#1}\mbox{}\\}
 \lstnewenvironment{cpp}[1][]
 {\linespace \lstset{language=C++,
 				frame=single,
@@ -140,17 +140,17 @@ Finally, in order to build an open, extensible prototype, the rich environment o
 \linespace
 
 This thesis is divided into the following sections:
-\paragraph{Section 1} focus on describing and explaining some basic knowledge. Starting from computer graphics concepts such as rendering pipeline, affine transformations, Phong and Blinn-Phong illuminations models and color space concepts.
+\paragraph{Section 1}, focus on describing and explaining some basic knowledge. Starting from computer graphics concepts such as rendering pipeline, affine transformations, Phong and Blinn-Phong illuminations models and color space concepts.
 
 It also covers different volume rendering techniques, both indirect and direct procedures, such as Marching cubes, texture-based, shear-warping, splatting, and ray casting. Then, it goes over current state-of-the-art volume rendering systems. 
  
- \paragraph{Section 2} describe in-depth the implementation of the procedure of this work. It introduces the technologies used and how they work and the algorithm's architecture.
+ \paragraph{Section 2}, describe in-depth the implementation of the procedure of this work. It introduces the technologies used and how they work and the algorithm's architecture.
  
 It describes the first non-parallel version of the implementation which is used as the starting point for the parallel version, and as performance lower bound.
 
 Finally, the accelerated version which exploits GPUs' power is described.
 
-\paragraph{Section 3} is the last section. It includes the conclusions of this work, the performances of the final parallel algorithm compared with the first basic version. It also draws some final considerations and some prompts for future research to improve the present one.
+\paragraph{Section 3}, is the last section. It includes the conclusions of this work, the performances of the final parallel algorithm compared with the first basic version. It also draws some final considerations and some prompts for future research to improve the present one.
 \pagebreak
 \fancyhead[L]{\nouppercase{\leftmark}}
 \pagenumbering{arabic}
@@ -220,7 +220,7 @@ In the context of computer graphics, such affine transformation matrices are def
 \linespace
 
 There exist different affine transformations which are very common and useful in computer graphics application:
-\paragraph{Identity transformation} The identity transformation is usually used as a starting point as it leaves the point completely unmodified. The matrix of the identity transformation is stated below:
+\myparagraph{Identity transformation} The identity transformation is usually used as a starting point as it leaves the point completely unmodified. The matrix of the identity transformation is stated below:
 \[
 \begin{pmatrix}
 1 & 0 & 0 & 0\\
@@ -250,7 +250,7 @@ Therefore, in order to be able to perform a multiplication between a position ve
  
 Such new component is known as \textbf{homogeneous point} (or a point with \textbf{homogeneous coordinates}), that usually assume value 1, besides when not very common transformation are applied like the shear transformation or when dealing with perspective projection.
 
-\paragraph{Scale transformation} The scale transformation is used unsurprisingly to scale-up and scale-down the magnitude of the vector but preserving its direction. There exists two type of scaling operation: \textbf{non-uniform scale} and \textbf{uniform scale}. 
+\myparagraph{Scale transformation} The scale transformation is used unsurprisingly to scale-up and scale-down the magnitude of the vector but preserving its direction. There exists two type of scaling operation: \textbf{non-uniform scale} and \textbf{uniform scale}. 
 
 It depends on the scaling factor applied to the different dimension if the scalar would be equal on all axes(X, Y, and Z as it is a 3-dimensional space) it would be a uniform scale; otherwise, it would be a non-uniform scale operation. 
 
@@ -277,7 +277,7 @@ S_{3} \cdot z \\
 \end{pmatrix}
 \;.
 \]
-\paragraph{Translation} The translation transformation moves a point in any of the three directions by means of a translation vector. In previous examples, the column-major has been used, but for the sake of simplicity, vectors will be expressed as row-major order. \footnote{In computing, row-major order and column-major order are methods for storing multidimensional arrays in linear storage. In row-major order, the consecutive elements of a row reside next to each other, whereas the same holds for consecutive elements of a column in a column-major order  \cite{wiki_row_major:1}}. 
+\myparagraph{Translation} The translation transformation moves a point in any of the three directions by means of a translation vector. In previous examples, the column-major has been used, but for the sake of simplicity, vectors will be expressed as row-major order. \footnote{In computing, row-major order and column-major order are methods for storing multidimensional arrays in linear storage. In row-major order, the consecutive elements of a row reside next to each other, whereas the same holds for consecutive elements of a column in a column-major order  \cite{wiki_row_major:1}}. 
 Such a vector is encoded into the transformation matrix as follows:
 \[
 \begin{pmatrix}
@@ -295,7 +295,7 @@ x+T_{x}\\y+T_{y}\\z+T_{z}\\1\\
 \end{pmatrix}
  \;.
 \]
-\paragraph{Rotate transformation} There exist different rotation matrices, each of them work with respect to one axis because space rotations, in a 3-dimensional, are specified with a rotation angle and a rotation axis.
+\myparagraph{Rotate transformation} There exist different rotation matrices, each of them work with respect to one axis because space rotations, in a 3-dimensional, are specified with a rotation angle and a rotation axis.
 
 Therefore there is the rotation matrix around the X-axis, the rotation matrix around the Y-axis and the rotation matrix around the Z-axis. Such transformations are done by means of using the trigonometry functions \textit{sine} and \textit{cosine}.\\
 Rotation around X-Axis:
@@ -439,7 +439,7 @@ Illumination models are very important in computer graphics as they let renderin
  
 There exist different illumination model, such as Phong, Blinn-Phong, and Ray tracing. However in this section the focus will be concentrated on the Phong and Blinn-Phong models; the latter is an improved version of the first one as it solves some light-related artefacts.
 
-\paragraph{Phong reflection model} The Phong reflection model was developed by Bui Tuong Phong at the University of Utah, who published it in his 1975 Ph.D dissertation \cite{phong_1975}.
+\myparagraph{Phong reflection model} The Phong reflection model was developed by Bui Tuong Phong at the University of Utah, who published it in his 1975 Ph.D dissertation \cite{phong_1975}.
 
 This reflection is an empirical model of local illumination. It describes the way a surface reflects light as combination of rough surface's diffuse reflection with shiny surface's specular reflection. The base observation made by Phong is that shiny surfaces have small intense specular highlights, while dull surfaces have large highlights that fall off more gradually. 
 
@@ -479,7 +479,7 @@ The $R_{m}$ component is calculated as the reflection of the direction vector $L
 R_{m} = 2(L_{m} \cdot N)N - L{m} \;.
 \]
 However, this model has one issue: the angle between viewing direction and reflection direction vector  is not allowed to be more than 90 degrees, otherwise the dot product is negative and then the specular term is 0.
-\paragraph{Blinn-Phong reflection model}
+\myparagraph{Blinn-Phong reflection model}
 In order to overcome that issue, the phong model has been improved by Jim Blinn in 1977 \cite{blinn1977models}, generally as the Blinn-Phong reflection model. Since then, it has become the default shading model used in OpneGL and Direct3D's rendering pipeline. % ref wiki
 
 
@@ -525,7 +525,7 @@ The next paragraph will describe how to go from one color space to another one. 
 
 
 In particular the technique to change between the RGB color space and the YUV color space has been used and implemented in this work during the shading phase of the proposed algorithm.
-\paragraph{From RGB to YUV and back} First of all, as already mentioned, the YUV color space defines a color is terms of Luminance(Y) and chrominance(UV). YUV was invented in the beginning of color TV the model provided the further use of old black-and-white TVs. Indeed, at the beginning only the Luminance component was transmitted and the colors were sent by means of separate signals in order to be able to visualize colors in a black-and-white architecture.
+\myparagraph{From RGB to YUV and back} First of all, as already mentioned, the YUV color space defines a color is terms of Luminance(Y) and chrominance(UV). YUV was invented in the beginning of color TV the model provided the further use of old black-and-white TVs. Indeed, at the beginning only the Luminance component was transmitted and the colors were sent by means of separate signals in order to be able to visualize colors in a black-and-white architecture.
 
 
 There exists different defined standards to convert a color from RGB to YUV and vice versa: \textbf{BT.601}, \textbf{BT.709} and \textbf{BT.2020}, developed for SDTV, HDTV and  UHDTV respectively\footnote{SDTV, HDTV and UHDTV are three categories of display format for digital television transmission, which differ from each other by the resolution lines.} \cite{wiki_yuv}.
@@ -617,7 +617,7 @@ V\\
 \;
 \]
 At the end, as it will be shown later on, in the implementation of this work, such YUV color components that are converted to RGB color space may finally be wrong, as outside the defined range $[0,1]$ of RGB color. Therefore they must be clamped between $0$ and $1$, in order to have a correct and valid RGB color value.
-%\paragraph{From RGB to HSL and back}
+%\myparagraph{From RGB to HSL and back}
 
 \pagebreak
 \subsection{Volume rendering} 
@@ -676,7 +676,7 @@ One of the main disadvantage of these techniques is their poor computational spe
 
 \subsubsection{Surface rendering} %TODO 24
 This section will focus on the fundamental concepts of the common techniques that belongs to indirect volume rendering category. First a brief explanation of the contour tracing algorithm, mentioned in the previous section, used during the early days of volume rendering in medical contexts. Then the core idea of marching cube technique will be described, as it is one of the main competitor in his category used in state-of-the-art indirect volume rendering techniques, nowadays.
-\paragraph{Contour tracing}
+\myparagraph{Contour tracing}
 Contour tracing was one of the first approach studied in early days of medical imaging in the digital era and different techniques has been developed and proposed during, years each of which tried to solve some others lacks, such as :
 \begin{itemize}
 \item Square tracing \cite{contour}
@@ -723,7 +723,7 @@ The second problem is related to the contour density in each slice and the traci
 In order to overcome these important pitfalls at some point in time in 1987, a new technique has been proposed that still provides good results, as it has been describe in the next paragraph \cite{Lorensen:1987:MCH:37402.37422}.
   
 
-\paragraph{Marching cubes}
+\myparagraph{Marching cubes}
 Marching cubes algorithm renders the data set, sending through the volume cubes with different configuration who while traversing it, depict the actual volume shape. Indeed, the output served by marching cubes algorithm is a polygonal mesh of an isosurface computed from a 3-dimensional discrete scalar dataset. It was first proposed and developed by E.Lorensen and H. E. Cline. The input volume is subdivided in a grid of cubes, then values that fall beyond the isosurface threshold are interpolated with respect to vertices of the grid of cubes and a pre-computed array of vertices configurations.
 
 
@@ -753,7 +753,7 @@ However, one of the main disadvantages is that it presents some discontinuities 
 
 Initially, marching cubes algorithm was protected by software patent, therefore an alternative was developed that didn't required any license and that solves the aforementioned ambiguity for some cubes configuration.
 
-\paragraph{Marching tetrahedra} works the same as marching cubes. However it solves the topological issues and discontinuities discussed before, giving in output almost always topological correct and watertight results.
+\myparagraph{Marching tetrahedra} works the same as marching cubes. However it solves the topological issues and discontinuities discussed before, giving in output almost always topological correct and watertight results.
 The basic idea, that in the end enhanced the results, is to improve the cubic configurations by making addition cuts breaking the cube into several tetrahedra \cite{Doi1991Jan}
 
 The advantage of using tetrahedra is that the are no more ambiguity with respect to the configurations. As only four vertices rather than eight are involved, the number of configuration determining the size of the lookup tables is much smaller. However, there two downsides of this approach:
@@ -770,7 +770,7 @@ Furthermore, they can be divided int two categories: object-based or image-based
 %TODO add volume integral
 %TODO add common steps definitions
 
-\paragraph{Shear-Warp} Shear-Warp was introduced by Lacroute \cite{Lacroute:1994:FVR:192161.192283}, this technique combines some of the advantages of both object-based and image-based algorithms. IT is very efficient because it combines the object-order traversal and the scan-line order sampling \cite{PFISTER2005229}.
+\myparagraph{Shear-Warp} Shear-Warp was introduced by Lacroute \cite{Lacroute:1994:FVR:192161.192283}, this technique combines some of the advantages of both object-based and image-based algorithms. IT is very efficient because it combines the object-order traversal and the scan-line order sampling \cite{PFISTER2005229}.
 
 
 It basically, projects the volume from the object space to the image space in a way that the voxel grid is aligned with the viewing plane.
@@ -825,7 +825,7 @@ These properties are the following:
 \end{itemize}
 Therefore, the composition is simplified a lot, as there exists a one-to-one mapping between voxels and intermediates pixels, this means that both voxels' scan lines and pixels' scan lines of the intermediate image can be traversed at the same time, following scan line order.
 
-\paragraph{Splatting} Splatting is another well known direct volume rendering technique that belongs to the object-base category. It can be summarize as an algorithm that distribute values of the volume data onto a view plane with different shape and following a distribution function \cite{PFISTER2005229}.
+\myparagraph{Splatting} Splatting is another well known direct volume rendering technique that belongs to the object-base category. It can be summarize as an algorithm that distribute values of the volume data onto a view plane with different shape and following a distribution function \cite{PFISTER2005229}.
 \linespace
 
 The basic idea is to traverse the slice in a front-to-back manner and for each voxel compute which pixel of the image plane is covered by the voxel \textit{"footprint"} resulting from \textit{"throwing"} voxels toward the image plane; such \textit{"footprint"}, are 3D interpolation kernels and can have different shapes and opacity, usually they are similar to the Gaussian function; there exist different possible choices too, but they don't give satisfying result as Gaussian.
@@ -860,7 +860,7 @@ These techniques present some advantages: It is quite fast because interpolation
 
 However, there are also some disadvantages: When kernels overlap, aliasing occurs leaving gaps on the output image; When zoomed in, the final image appears to be blurred, as the Gaussian function cuts away higher frequencies.
 
-\paragraph{Texture-based} Texture-based techniques are quite famous because they allow to exploit existing hardware capabilities and rendering techniques. There exists two type of texture-based algorithm: 2-D texture slicing and 3-D texture slicing. However, 2-D texture still outperform the latter for large volume and that's the reason why 3-D texture slicing will not be inside the focus of this explanation, as the main objective of this work is to handle large data set efficiently \cite{PFISTER2005229}.
+\myparagraph{Texture-based} Texture-based techniques are quite famous because they allow to exploit existing hardware capabilities and rendering techniques. There exists two type of texture-based algorithm: 2-D texture slicing and 3-D texture slicing. However, 2-D texture still outperform the latter for large volume and that's the reason why 3-D texture slicing will not be inside the focus of this explanation, as the main objective of this work is to handle large data set efficiently \cite{PFISTER2005229}.
 
 
 The core concept of 2-D texture is to create slices of the volume, create polygons out of them and take advantage of existing implemented functionality on graphics hardware for interpolation and compositing, such as: rasterization, texturing and blending, available in almost all modern GPUs.
@@ -902,7 +902,7 @@ The other problem becomes evident when the viewing angle is moved to 45 degrees 
 
 Last but not least disadvantage is the needs of three different sets of slices that require additional storing memory and a preliminary step of interpolation of the volume.
 
-\paragraph{Volume Ray casting}
+\myparagraph{Volume Ray casting}
 The most known direct volume rendering algorithm is Volume Ray casting,a first version along with an implementation has been proposed by \cite{levoy_1990:5}.
 Levoy introduced Volume ray casting as a ray tracing technique involving volumetric data set that is not surface-based. However, the naming convention is evolved as the time comes, separating the two techniques.
 \linespace
@@ -995,15 +995,15 @@ There exists a number of different composition schemes that can be used \cite{KA
 %inserire immagine
 All of the above treats the sampled value of the voxel in a different way. However, they are used to extract the isosurfaces and to render them. There are no advantages or disadvantages of using one method or the other because they are used to archive different results in terms of the final image.
 
-\paragraph{Maximum intensity projection} Maximum intensity projection is often used for magnetic resonance angiograms or to extract vessel structures from CT or MRI scans. For rendering, it uses the highest value sampled from the ray.
+\myparagraph{Maximum intensity projection} Maximum intensity projection is often used for magnetic resonance angiograms or to extract vessel structures from CT or MRI scans. For rendering, it uses the highest value sampled from the ray.
 
 %add image
-\paragraph{First hit} First hit composite method works by means of using the sampled scalar value that is higher than a defined threshold limit. Then, the isosurface is extracted and rendered.
+\myparagraph{First hit} First hit composite method works by means of using the sampled scalar value that is higher than a defined threshold limit. Then, the isosurface is extracted and rendered.
 
-\paragraph{Accumulate} Accumulate compositing method is similar to the over operator. It works accumulating the intensity color until enough opacity is collected. The final result will show also transparent layer whose opacity is above 0 and 
+\myparagraph{Accumulate} Accumulate compositing method is similar to the over operator. It works accumulating the intensity color until enough opacity is collected. The final result will show also transparent layer whose opacity is above 0 and 
 therefore still visible.
 
-\paragraph{Average} Average produces essentially the same picture of X-ray. Additionally, it does not take into account any opacity value.
+\myparagraph{Average} Average produces essentially the same picture of X-ray. Additionally, it does not take into account any opacity value.
 
 \subsection{Volume rendering state-of-the-art} 
 %TODO scrivere una migliore introduzione pro 500 e pro 1000
@@ -1025,7 +1025,7 @@ For the sake of clarity VolumePro 500 will not be discussed, instead a descripti
 
 %Another technology currently deployed as state-of-the-art volume rendering and real-time visualization is based on the well known Marching cubes technique and it is called VESTA. It belongs to 
 %TODO search something about VESTA for surface exctracting algorithm
-\paragraph{VolumePro 1000} Volume Pro 1000 is developed and improved by TeraRecons Inc. which released the first version of the system in 2002. TeraRecons release is the successor of Volume Pro 500 which was built  the company Mitsubishi Electric and release it in 1999, improving an already existing architecture known as Cube-4, developed at SUNY Stony Brook.
+\myparagraph{VolumePro 1000} Volume Pro 1000 is developed and improved by TeraRecons Inc. which released the first version of the system in 2002. TeraRecons release is the successor of Volume Pro 500 which was built  the company Mitsubishi Electric and release it in 1999, improving an already existing architecture known as Cube-4, developed at SUNY Stony Brook.
 \linespace
 
 The VolumePro 1000 system \cite {Wu:2003:SOR:641480.641510}
@@ -1054,66 +1054,64 @@ As well as its predecessor VolumePro 500, it performs a trilinear interpolation 
 Another aspect that characterizes VolumePro 1000 system is that voxels can have up to four fields, each of them is associated with a lookup table. Those are organized in a set and used during the classification phase; they can be combined by means of a hierarchy of arithmetic-logic units as they are built in cascade.
 \linespace
 
-The shear image procedure can be divided in two parts: The first part operates like the standard shear-warp technique by stepping through one slice of the volume at a time, that is stored in the main memory. Then, it interpolates adjacent voxel slices to obtain new slices called z-interpolated samples. 
+The shear image procedure can be divided into two parts: The first part operates like the standard shear-warp technique by stepping through one slice of the volume at a time, that is stored in the main memory. Then, it interpolates adjacent voxel slices to obtain new slices called z-interpolated samples. 
 
 These resulting slices will appear to be organized in a grid parallel to the x and y dimensions of the volume, as no other interpolation took place before.
 \linespace
 
-The second part, traverse each of the new generate slice of z-interpolated sampled value. It enumerates the sample point on the rays that intersect with the slice and it computes the color and the opacity value of each one of the z-interpolated samples. It also associates a depth value to measure the distance from the sample to the eye and are used to embed polygons in the rendered images.
+The second part, traverse each of the newly generated slices of z-interpolated sampled value. It enumerates the sample point on the rays that intersect with the slice, and it computes the color and the opacity value of each one of the z-interpolated samples. It also associates a depth value to measure the distance from the sample to the eye and are used to embed polygons in the rendered images.
 
-
-Finally those computed values are accumulated along the respective rays and a rendering of the volume is produced and stored directly on the image plane.
-\linespace
-
-As shading technique, in VolumePro 1000  Phong shading illumination model is used, trying to ensure a correct gradient, and compositing is made by means of alpha blending maximum intensity projection like  VolumePro 500, but its hardware also supports early ray termination that let increase  its performance.
+Finally, those computed values are accumulated along on the respective rays, and a rendering of the volume is produced and stored directly on the image plane.
 
 \linespace
-Part of this work is to be able to built a fully image-based algorithm based on the ray casting technique which reaches the degree of efficiency and quality in terms of execution speed and output image quality similar to the ones reached when deploying VolumePro 1000. In the next section, a fully detailed description of the architecture, technologies and concepts behind the implementation part of this work ,in an attempt to reach such results, is presented.
+
+As shading technique, in VolumePro 1000  Phong shading illumination model is used, trying to ensure a correct gradient, and compositing is made by means of alpha blending maximum intensity projection like  VolumePro 500, but its hardware also supports early ray termination that let increase its performance.
+
+\linespace
+Part of this work is to be able to build a fully image-based algorithm based on the ray casting technique which reaches the degree of efficiency and quality in terms of execution speed and output image quality similar to the ones reached when deploying VolumePro 1000. In the next section, a fully detailed description of the architecture, technologies, and concepts behind the implementation part of this work, in an attempt to reach such results, is presented.
 \pagebreak
 \section{Renderer implementation} 
-This work focuses on building a volume rendering algorithm that can exploit the power available on graphics hardware, through parallelization. Furthermore, the objective is to distribute such algorithm in an environment that is regularly used in research and academic fields, in order to simply the integration in other systems whom need an efficient volume renderer.
+This work focuses on building a volume rendering algorithm that can exploit the power available on graphics hardware, through parallelization. Furthermore, the objective is to distribute such algorithm in an environment that is regularly used in research and academic fields, in order to simplify the integration in other systems whose need an efficient volume renderer.
 
-
-In this chapter, will be given a description of technologies used, and reasons behind each made choice, to be able to fulfil the thesis objectives.
+In this chapter, will be given a description of technologies used, and the reasons behind each choice, to be able to fulfill the thesis objectives.
 \linespace
 
-First of all, an explanation about MATLAB environment and its precious MEX functions: what are they, why are they useful and how, in order to integrate a common MATLAB program with one written in an external programming language like C++.
+First of all, an explanation about MATLAB environment and its precious MEX functions: what are they, why are they useful and how, in order to integrate a typical MATLAB program with one written in an external programming language like C++.
 
 Then, a brief introduction over CUDA framework and programming model, why it has been chosen over other parallel programming libraries and framework and how it works.
 
-After the technologies section, there will be a deep dive into the algorithm itself; describing the underlying architecture on which it is modelled and the concepts borrowed from the original work by Levoy, on efficient volume ray tracing algorithm.
+After the technologies section, there will be a deep dive into the algorithm itself; describing the underlying architecture on which it is modeled and the concepts borrowed from the original work by Levoy, on efficient volume ray tracing algorithm.
 \linespace
 
-There will be a first section about the base non-parallel version of the developed algorithm, which has been built first for different reasons:
+There is e a first section about the base non-parallel version of the developed algorithm, which has been built first for different reasons:
 
-First of all, the non accelerated algorithm has been developed in order to have a lower bound in terms of efficacy and efficiency of the renderer; very useful, as it will be used during comparisons and while drawing the final conclusions about this work.
+First of all, the non-accelerated algorithm has been developed in order to have a lower bound in terms of efficacy and efficiency of the renderer.  It is used during comparisons and while drawing the conclusions about this work.
 
 Secondly, a natural way of developing parallel software is to start from the non-parallel counterpart and then proceed step by step with a conversion from the linear execution and written code, to the concurrent execution and respective instructions.
 
-A full explanation of the different parts that are composing the algorithm will be given along with excerpts of the code, trying to separate each concept following the steps describe in the previous section about direct volume rendering technique with respect to ray casting.
+A full explanation of the different parts that are composing the algorithm is given along with excerpts of the code, trying to separate each concept following the steps described in the previous section about direct volume rendering technique concerning ray casting.
 
-The integration between the MATLAB environment and the C++ code will be describe focusing on single instructions needed to communicate from and to a MATLAB program.
+The integration between the MATLAB environment and the C++ code is described focusing on single instructions needed to communicate from and to a MATLAB program.
 \linespace
 
-Then, the accelerated version will be presented and explained. A description of the procedure need to go from the basic version to the parallel one will be given, which shows the code transformations from the common programming model used for the basic version to the CUDA programming model. 
+Then, the accelerated version is presented and explained. A description of the procedure need to go from the basic version to the parallel one is given, which shows the code transformations from the common programming model used for the basic version to the CUDA programming model. 
 
-Description of the most crucial code part will be given that shows those transformations along whit whichever changes in underlying data structure involved.
+Description of the most crucial code part is given that shows those transformations along whit whichever changes in underlying data structure involved.
 
 \subsection{Technologies} 
 \subsubsection{MATLAB and MEX functions}
-MATLAB, that stands for matrix laboratory, is a multi-paradigm numerical computing environment and proprietary programming language developed by MathWorks. It allows matrix manipulation, easy plotting of data and function and creation of user interface.
-It is an integrated development environment which widely use in academic field, due to its power and enormous number of functionality that are available with the core version but whom rocket-up exponentially with the numerous plug-ins.
+MATLAB that stands for matrix laboratory is a multi-paradigm numerical computing environment and proprietary programming language developed by MathWorks. It allows matrix manipulation, easy plotting of data and function and creation of user interface.
+It is an integrated development environment which is widely used in the academic field, due to its power and an enormous number of functions that are available with the core version that rocket-up exponentially with the numerous plug-ins.
 
-A MATLAB application is built using the MATLAB scripting language and the Command Window is usually used as an interactive mathematical shell or to execute MATLAB code.
-%TODO ref https://en.wikipedia.org/wiki/MATLAB
+A MATLAB application is built using the MATLAB scripting language, and the Command Window, that is usually used as an interactive mathematical shell or to execute MATLAB code \cite{wiki_mat}.
 \linespace
 
-One of the most interesting and useful feature of MATLAB, with respect to this work, is the MEX file.
-\paragraph{MEX file and functions} The term MEX stands for "MATLAB executable". %ref https://de.mathworks.com/help/matlab/matlab_external/introducing-mex-files.html
+One of the most interesting and useful feature of MATLAB is the MEX file, that is fundamental for this work.
+\myparagraph{MEX file and functions} The term MEX stands for "MATLAB executable" \cite{matlab_mex}.  
 There are different definitions:
 \begin{itemize}
-\item MEX file: it refers to the source code file written in an external programming language such as C, C++ or Fortran,
-\item MEX function: it refers to the binary subroutine compiled from the source code file.
+\item MEX file, refers to the source code file written in an external programming language such as C, C++ or Fortran.
+\item MEX function, refers to the binary subroutine compiled from the source code file.
 \end{itemize}
 
 A MEX file can contain only one function or subroutine which is identified by the file name without the file extension.
@@ -1125,11 +1123,12 @@ MEX functions have very important features such as:
 \item it exposes different API that allows the integration of external function simplifying the communication between the workspace and the subroutine.
 \end{itemize}
 
-In order to be able to create a MEX file and therefore call MEX functions from MATLAB a MATLAB-supported compiler must be installed such as: MinGW or MS C++\footnote{https://de.mathworks.com/support/requirements/supported-compilers.html} and write the function with one the available API. For the sake of simplicity, only APIs used for this thesis will be explained which are used for functions written in C or C++ programming languages, called C MEX API and C Matrix API.
+One of the most interesting and useful feature of MATLAB is the MEX file, that is fundamental for this work.
+In order to be able to create a MEX file and therefore call MEX functions from MATLAB, a MATLAB-supported compiler must be installed such as MinGW or MS C++\footnote{https://de.mathworks.com/support/requirements/supported-compilers.html} and write the function with one the available API.  For the sake of simplicity, only APIs used for this thesis will be explained which are used for functions written in C or C++ programming languages, called C MEX API and C Matrix API.
 
-The first step to write a MEX function in C++ is to define it with \textit{mexFunction} function, which is the entry point to C/C++. It acts as the gateway between C++ and MATLAB workspace that identify a MEX function.
+The first step to write a MEX function in C++ is to define it with \textit{mexFunction} function, which is the entry point to C/C++. It acts as the gateway between C++ and MATLAB workspace that identifies a MEX function.
 
-When a MEX functions is invoked, MATLAB find and loads the corresponding MEX functions of the same name. Then it searches for a symbol named \textit{mexFunction} within the MEX function. Such function is defined as follows: %ref https://de.mathworks.com/help/matlab/apiref/mexfunction.html
+When a MEX function is invoked, MATLAB finds and loads the corresponding MEX functions of the same name. Then it searches for a symbol named \textit{mexFunction} within the MEX function. Such function is defined as follows \cite{matlab_mexfunc}:
 
 \begin{cpp}[caption={MEX functions C/C++ entry point definition},label=code:mexfunction]
 #include "mex.h"
@@ -1137,7 +1136,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
 	const mxArray *prhs[])
 \end{cpp}
 
-The signature that define this function is composed of four arguments, which are automatically seeded by MATLAB when the MEX function is called with the calling arguments.
+The signature that defines this function is composed of four arguments, which are automatically seeded by MATLAB when the MEX function is called with the calling arguments.
 
 The arguments \textit{nlhs} and \textit{nlhs} contains the number of right and left arguments, respectively. Therefore, it is clear that \textit{plhs} and \textit{prhs} are two pointers to arrays of type mxArray, with length of \textit{nlhs} and \textit{nrhs}. These pointers are the input arguments and the outputs of the MEX function respectively, which has the following general form, in the MATLAB syntax.
 
@@ -1151,7 +1150,7 @@ o_{0},o_{1},o_{2}, \cdots
 Where $o_{m}$ represents the $m-element$ left-side output argument and $a_{n}$ represents the $n-element$ right-side input argument, with $n < prhs$ and $m < plhs$,respectively.
 \linespace
 
-The fundamental type underlying MATLAB data is \textit{mxArray}. It is an opaque C data type\footnote{An language type is defined \textit{opaque} when the concrete representation of the type is hidden from its users, and the visible implementation is incomplete. This enforces information hiding, since its values can only be manipulated by calling help functions that have access to the missing information.} and the structure contains the following information about the array:
+The fundamental type underlying MATLAB data is \textit{mxArray}. It is an opaque C data type\footnote{An language type is defined \textit{opaque} when the concrete representation of the type is hidden from its users, and the visible implementation is incomplete. This enforces information hiding since its values can only be manipulated by calling help functions that have access to the missing information.}, and the structure contains the following information about the array:
 
 \begin{itemize}
 \item Its type
@@ -1163,24 +1162,24 @@ The fundamental type underlying MATLAB data is \textit{mxArray}. It is an opaque
 \end{itemize}
 \linespace
 
-All MATLAB variables (including scarlas, vectors, matrices, character arrays, cell arrays, structures or objects) are stored as MATLAB arrays, whom are declared of type mxArray in C/C++.
+All MATLAB variables, including scalars, vectors, matrices, character arrays, cell arrays, structures or objects, are stored as MATLAB arrays, that are declared of type mxArray in C/C++.
 
-There exists different data types in MATLAB:
-\paragraph{Complex double-precision matrices}
+There exists different data types in MATLAB \cite{matlab_data}:
+\myparagraph{Complex double-precision matrices}
 Complex double-precision matrix is the most common data type in MATLAB. These matrices are of type \textit{double} and have dimensions m-by-n, where $m$ and $n$ are the number of rows and the number of columns, respectively. The data inside the matrix is stored as a vector of interleaved, double-precision numbers where the real and the imaginary parts are stored next to each other\footnote{To test for a non complex matrix, mxIsComplex helper function must be called.}.
-\paragraph{Other numeric matrices}
+\myparagraph{Other numeric matrices}
 MATLAB also suppers single-precision floating point and 8, 16, 32 and 64-bit integers, both signed and unsigned.
-\paragraph{MATLAB char arrays}
+\myparagraph{MATLAB char arrays}
 In MATLAB, \textit{char} arrays are data stored as unsigned 16-bit integers. In order to convert a MATLAB \textit{char} array to a C-style string, \textit{mxArrayToString} subroutine bust be called; vice versa, to convert a C-Style string to a \textit{char array}, \textit{mxCreateString} is used.
-\paragraph{Cell arrays}
+\myparagraph{Cell arrays}
 Cell arrays are a collection of MATLAB arrays where each \textit{mxArray} is referred to as a cell. Cell arrays allow storing together MATLAB arrays of different types. They are stored in a similar manner to numeric matrices, except the data portion contains a single vector of pointers to \textit{mxArrays}. Member of this vector are called cells and each cell can be of any supported data type, even another cell array.
-\paragraph{Structures}
+\myparagraph{Structures}
 Structures are stored in the same way as a 1-by-n cell array where $n$ is the number of fields in the structure. Members of the data vector are called fields and each filed is associated with an identifying name, stored in the \textit{mxArray}.
-\paragraph{Objects}
+\myparagraph{Objects}
 Objects are stored and accessed the same way as structures. In MATLAB, objects are named structures with registered methods; Outside of it, an object is a structure that contains additional stored information of the class name, that identify the name of the object.
-\paragraph{Multidimensional arrays}
+\myparagraph{Multidimensional arrays}
 MATLAB arrays of any type can be multidimensional. A vector of integers is stored where each element is the size of the corresponding dimension. the storage method of the data is the same as for matrices.
-\paragraph{Empty arrays}
+\myparagraph{Empty arrays}
 In MATLAB, arrays of any type can be empty. An empty \textit{mxArray} is one with at least one dimension equal to zero.\footnote{For example, a double-precision \textit{mxArray} of type double, where its dimensions $m$ and $n$ are equal to 0 and the pointer is NULL, is an empty array.} 
 %ref https://de.mathworks.com/help/matlab/matlab_external/matlab-data.html
 \linespace
@@ -1192,15 +1191,15 @@ mxArray *myData = mxCreateDoubleMatrix(m,1,mxREAL);
 
 There exists an mxCreate* function for each of the supported MATALAB data type other than double-precision floating-point array, for example\footnote{For the sake of clarity some creational functions are omitted. The full list of available functions can be found at \cite{create_del_mxarray:2}} 
 \begin{itemize}
-\item \textit{*DoubleScalar}: for Scalar, double-precision array.
-\item \textit{*NumericMatrix}: for numeric matrix of size m-by-n.
-\item \textit{*String}: for 1-by-n array initialized to a specified string.
-\item \textit{*LogicalMatrix}: for m-by-n logical array.
-\item \textit{*StructMatrix}: for m-by-n structure array.
-\item \textit{*CellMatrix}: for m-by-n cell array
+\item \textit{*DoubleScalar} for Scalar, double-precision array.
+\item \textit{*NumericMatrix} for numeric matrix of size m-by-n.
+\item \textit{*String} for 1-by-n array initialized to a specified string.
+\item \textit{*LogicalMatrix} for m-by-n logical array.
+\item \textit{*StructMatrix} for m-by-n structure array.
+\item \textit{*CellMatrix} for m-by-n cell array
 \end{itemize}
 
-The creation counterpart is defined as the following statement, that frees the dynamic memory allocate by mxCreate* functions such as the previous call:
+The deletion is defined as in Listing \ref{code:mxarraydestroy}. It frees the dynamic memory allocate by mxCreate* functions such as the previous call:
 
 \begin{cpp}[caption={Deallocation of dynamic memory referred by myData \textit{mxArray} pointer, from Listing \ref{code:createmydata}},label=code:mxarraydestroy]
 mxDestroyArray(myData);
@@ -1222,12 +1221,12 @@ However, it should not be called on a \textit{mxArray} that:
 \end{itemize}
 %ref https://de.mathworks.com/help/matlab/apiref/mxdestroyarray.html
 
-The last bit about MEX functions and \textit{mxArray} fundamental type is how to access and write data from and to an defined \textit{mxArray}.
+The last bit about MEX functions and \textit{mxArray} type is how to access and write data from a defined \textit{mxArray}.
 
-First of all, as already mentioned, any variable declared as a \textit{mxArray} is indeed and array in C/C++ context. Therefore as any other array in C/C++ the array subscript operator [ ] is defined, that allows users to access the element stored at the position, specified by an integer value. %ref http://www.cplusplus.com/doc/tutorial/arrays/
+First of all, as already mentioned, any variable declared as a \textit{mxArray} is indeed and array in C/C++ context. Therefore as any other array in C/C++ the array subscript operator [ ] is defined, that allows users to access the element stored at the position, specified by an integer value \cite{cpp_tut} %ref http://www.cplusplus.com/doc/tutorial/arrays/
 \linespace
 
-In the same way helper functions were defined to create new \textit{mxArrays}, helper functions are defined to access and write data with respect to the MATLAB target type.
+In the same way helper functions were defined to create new \textit{mxArrays}. They are needed to access and write data with respect to the MATLAB target type.
 
 For example, the following statement describe how to read from the MEX function input argument \textit{prhs} element at position 0 which points to an array of one single element.
 
@@ -1236,7 +1235,7 @@ For example, the following statement describe how to read from the MEX function 
 double multiplier = mxGetScalar(prhs[0]);
 \end{cpp}
 
-The array subscript operator works the same manner as in C/C++, then it can be used to modify and set values at specified array position. Listing \ref{code:mxarrayset} shows how to create a new mxArray matrix of floating-point non-complex type of size m-by-n and how to set a new value for first element of the first output argument of the MEX function.
+The array subscript operator works the same manner as in C/C++, then it can be used to modify and set values at specified array position. Listing \ref{code:mxarrayset} shows how to create a new mxArray matrix of floating-point non-complex type of size m-by-n and how to set a new value for the first element of the first output argument of the MEX function.
 
 \begin{cpp}[caption={Create the output matrix corresponding to the first output array. Get the pointer to the real data and set a new value for the first element},label=code:mxarrayset]
 /* create the output matrix */
@@ -1247,22 +1246,23 @@ double *outMatrix = mxGetDoubles(plhs[0]);
 outMatrix[0] = 1;
 \end{cpp}
 
-As can be seen, the notation used was with a single couple of square brackets, even if the output matrix is of size m-by-n. The reason is that, matrices defined of type \textit{mxArray} are accessed by means of a single index, because of the way C/C++ storing technique allocate matrix in a contiguous fashion, in row-major order\footnote{In a row-major order, the consecutive elements of a row are allocated in memory next to each other. %ref https://en.wikipedia.org/wiki/Row-_and_column-major_order
+As can be seen, the notation used was with a single couple of square brackets, even if the output matrix is of size m-by-n. The reason is that, matrices defined of type \textit{mxArray} are accessed by means of a single index, because of the way C/C++ storing technique allocate matrix in a contiguous fashion, in row-major order\footnote{In a row-major order, the consecutive elements of a row are allocated in memory next to each other \cite{wiki_row_major:1}. %ref https://en.wikipedia.org/wiki/Row-_and_column-major_order
 }.
 
 
 \subsubsection{CUDA framework}
 CUDA is a framework and programming model that let its users build parallel applications which exploit the power of GPUs, developed by NVIDIA whose objective was to release a \textit{bundle} which consists of a compiler, libraries, and runtime software, to enable programmers to readily access a new data-parallel computation model and develop application  \cite{KirkHwu_2014:3}.
 
-The computing system, from the CUDA perspective, is divided in two main parts: an host and one or more devices. The host is a traditional CPU, and a device is a processors with a massive number of arithmetic units, typically a GPU.
+The computing system, from the CUDA perspective, is divided into two main parts: a host and one or more devices. The host is a traditional CPU, and a device is a processors with a massive number of arithmetic units, typically a GPU.
 
 In order to be able to safely perform parallel computation, a modern software application must at least exhibit what is called data parallelism.\footnote{Data parallelism in snot the only type of parallelism widely used in parallel programming. Task parallelism has also been used extensively in parallel programming. Task parallelism is typically exposed through task decomposition of applications  \cite{KirkHwu_2014:3}}.
 
 Such phenomenon allows arithmetic operations to be performed on different parts of the data structure in parallel, and CUDA devices accelerate the executions of these applications by applying their massive number of arithmetic units to these data-parallel programs.
 \linespace
 
-CUDA is heterogeneous programming model because any CUDA program reflect the coexistence of a host(CPU) and one or more devices(GPUs) in the computer. Indeed, a CUDA source file usually have a mixture of both host and device code.
+CUDA is a heterogeneous programming model because any CUDA program reflects the coexistence of a host(CPU) and one or more devices(GPUs) in the computer. Indeed, a CUDA source file usually has a mixture of both host and device code.
 Any traditional C/C++ program can be seen as a CUDA program that contains only host code.
+
 
 \begin{cpp}[caption={CUDA keywords for function declarations},label=code:cudakeywords]
 /*Marked function that will be executed on the device, but only 
@@ -1279,10 +1279,10 @@ __host__ float hostFunctions()
 \end{cpp}
 
 
-Host and device code are clearly marked with special CUDA keywords, as shown in Listing \ref{code:cudakeywords}. $\_\_device\_\_$ and $\_\_global\_\_$ keywords mark functions that will run on the processing unit of connected devices. The subtle difference resides on who can call such functions, $\_\_device\_\_$ marked functions are called from another functions that runs on the device, and $\_\_global\_\_$ marked ones are called only from host-running functions. 
+Host and device code are clearly marked with special CUDA keywords, as shown in Listing \ref{code:cudakeywords}. $\_\_device\_\_$ and $\_\_global\_\_$ keywords mark functions that will run on the processing unit of connected devices. The subtle difference resides on who can call such functions: $\_\_device\_\_$ marked functions are called from another functions that runs on the device, and $\_\_global\_\_$ marked ones are called only from host-running functions. 
 \linespace
 
-The $\_\_host\_\_$ keyword indicates that the functions being declared is an host function. Such function is simply a traditional C/C++ function that execute on the host and can only be called from another host function. By default, all functions that are not marked by any CUDA keywords, are host functions.It is interesting noting that it is possible to use both $\_\_host\_\_$ and $\_\_device\_\_$ keywords in a function declaration, as it instruct the compilation system to generate two versions of the same function, one executed on the host and one execute on the device.
+The $\_\_host\_\_$ keyword indicates that the function being declared is a host function. Such function is simply a traditional C/C++ function that executes on the host and can only be called from another host function. By default, all functions that are not marked by any CUDA keywords, are host functions. It is interesting noting that it is possible to use both $\_\_host\_\_$ and $\_\_device\_\_$ keywords in a function declaration, as it instructs the compilation system to generate two versions of the same function, one executed on the host and one execute on the device.
 \linespace
 
 $\_\_global\_\_$ marked device functions are also known as \textit{kernels}. When a kernel function is called, or \textit{launched} from an host call, it is executed by a large number of threads on a device to exploit data parallelism, generated by the CUDA runtime system.
@@ -1298,16 +1298,16 @@ Such blocks of a grid are of the same size and each block can contain up to 1024
 \end{figure}
 
 
-Each thread in a block has a unique $theadIdx$ index,similarly each block in a grid has a unique $blockIdx$ identifier. This allows each thread to be uniquely identified inside a grid by combining its $threadIdx$ and the $blockIdx$ values to along with the specified block's number of thread values $blockDim$, as described by the following formula:
+Each thread in a block has a unique $theadIdx$ index,similarly each block in a grid has a unique $blockIdx$ identifier. This allows each thread to be uniquely identified inside a grid by combining its $threadIdx$ and the $blockIdx$ values to along with the specified block's number of thread values $blockDim$, as described by the following formula.
 
 \[
-i = blockIdx.x * blockDim.x + threadIdx.x
+i = blockIdx.x * blockDim.x + threadIdx.x \;.
 \]
 
-By launching the kernel with a larger number of blocks, one can process larger amount of data. For example, by launching a kernel with $n$ or more threads, it is possible to process vectors of length $n$.
+By launching the kernel with a more significant number of blocks, one can process a more massive amount of data. For example, by launching a kernel with $n$ or more threads, it is possible to process vectors of length $n$.
 \linespace
 
-In order to launch a kernel function, the host code has to set the frid and thread block dimensions via \textit{execution configuration} parameters, illustrated in Listing \ref{code:kernelconfig}.
+To launch a kernel function, the host code has to set the grid and thread block dimensions via \textit{execution configuration} parameters, illustrated in Listing \ref{code:kernelconfig}.
 
 The configuration parameters are given between the $<<<$ and $>>>$ before the traditional function arguments. The first configuration parameter gives the number of thread blocks in the grid. The second one specifies the number of threads in each thread block. In the example below, there are 256 threads in each block and $n/256.0$ thread blocks where $n$ is the dimension of our data.
 
@@ -1315,8 +1315,9 @@ The configuration parameters are given between the $<<<$ and $>>>$ before the tr
 kernelFunc<<<ceil(n/256.0), 256>>(input data);
 \end{cpp}
 
-Once device functions and data declarations are added into a C/C++ source file, it is no longer acceptable to a traditional compiler. The code needs to be compiled by a compiler that recognizes and understands these additional declarations. For this reasons, a CUDA compiler by NVIDIA is used, called NVCC.
-Figure \ref{fig:cudacompiler}, shown the NVCC that processes a CUDA program at the top, suing the CUDA ketwords to separate the host code from the the device code. The host code is further compiled with the hots's standard C/C++ compilers and in run as a traditional CPU process.Instead, the device code is further compiled by a runtime component of NVCC and execute on a GPU device.
+Once device functions and data declarations are added into a C/C++ source file, it is no longer acceptable to a traditional compiler. The code needs to be compiled by a compiler that recognizes and understands these additional declarations. For these reasons, a CUDA compiler by NVIDIA is used, called NVCC.
+Figure \ref{fig:cudacompiler}, shown the NVCC that processes a CUDA program at the top, suing the CUDA keywords to separate the host code from the device code. The host code is further compiled with the host's standard C/C++ compilers and runs as a traditional CPU process. Instead, the device code is further compiled by a runtime component of NVCC and execute on a GPU device.
+
 \begin{figure}[hbtp]
 \centering
 \includegraphics[scale=0.7]{images/cuda-compiler.png}
@@ -1328,9 +1329,10 @@ Figure \ref{fig:cudacompiler}, shown the NVCC that processes a CUDA program at t
 
 
 \subsection{Architecture} 
-This work and actual implementation follows the previous work of Levoy about volume ray tracing, mainly.
 
-Figure \ref{fig:architecture} shows the algorithm architecture with respect to the entire ecosystem and how it interact with other MATLAB programs as well as the relationship with the accelerating CUDA framework. As can be seen, in order to build a broadly available rendering algorithm all the procedure is encapsulated inside a MEX function that will let users to include it inside every other MATLAB program that require a fast effective and real-time volume rendering algorithm, by passing the right required arguments and receiving the resulting output 2-dimensional image with the projected volumetric input dataset as expected from a volume ray casting algorithm  \cite{levoy_1988:4}.
+This work and actual implementation follow the previous work of Levoy about volume ray tracing, mainly.
+
+Figure \ref{fig:architecture} shows the algorithm architecture with respect to the entire ecosystem and how it interacts with other MATLAB programs as well as the relationship with the accelerating CUDA framework. As can be seen, in order to build a broadly available rendering algorithm all the procedure is encapsulated inside a MEX function that let users include it inside every other MATLAB program that requires a fast effective and real-time volume rendering algorithm, by using the right required arguments and receiving the resulting output 2-dimensional image with the projected volumetric input dataset as expected from a volume ray casting algorithm  \cite{levoy_1988:4}.
 
 \begin{figure}[hbtp]
 \centering
@@ -1354,28 +1356,28 @@ The procedure as other MEX functions, is called by the file name as showed in Li
 output = Volume(vol,objs,infoStruct);
 \end{cpp}
 
-The first volumetric dataset store the voxels' intensity values that defined the actual volume. Each value is bounded to $[0,\,255]$ value range, where $0$ is the empty space around the volume. The second volume stores the different objects that are composing the original volume. Values are stored in the same way as in the original volume, as a 3-dimensional grid of voxels but instead of intensity they represent objects. 
+The first volumetric dataset store the voxels' intensity values that defined the actual volume. Each value is bounded to $[0,\,255]$ value range, where $0$ is the empty space around the volume. The second volume stores the different objects that are composing the original volume. Values are stored in the same way as in the original volume, as a 3-dimensional grid of voxels, but instead of intensity, they represent objects. 
 
-The data format is of type integer in the range of $[0,\,(N-1)]$ where $N$ is the total number of objects whom compose the volume. This second volume is optional but it can't be omitted from the input arguments, so it can be passed as empty volume.
+The data format is of type integer in the range of $[0,\,(N-1)]$ where $N$ is the total number of objects whose compose the volume. This second volume is optional, but it can't be omitted from the input arguments so that it can be passed as empty volume.
 
-Except the two volume datasets, all the other arguments must be defined as a MATLAB struct, as it requires a lot of arguments.
+Except for the two volumetric datasets, all the other arguments must be defined as a MATLAB struct, as it requires many arguments.
 \linespace
 
-The threshold value let users display all voxels with intensity value greater or equal then the threshold, as stated in \cite{levoy_1988:4} this produces 3D regions of opaque voxels, where the outermost layer of which is the desired surface.
+The threshold value lets users display all voxels with an intensity value greater or equal than the threshold, as stated in \cite{levoy_1988:4} this produces 3D regions of opaque voxels, where the outermost layer of which is the desired surface.
 The classification procedure employed is this work wouldn't be able to display concentric semitransparent surfaces or object, as reported by Levoy in \cite{levoy_1988:4}. To solve this issue, the second volumetric dataset that contains every object of interest in the volume is used along with the opacities array.
 \linespace
 
 The alpha opacities array is used to define the opacities of the object. Indeed, the size of the array $N$ must be equal to the number of objects defined in the second volume. 
-Although, this array have also another purpose, if the size $N$ is equal to 1 it defines the global opacity of the volume.
+Although this array also has another purpose, if the size $N$ is equal to 1, it defines the global opacity of the volume.
 
-Another input argument strictly related to the classification and number of objects defined in the second volume, is the colour array.
+Another input argument strictly related to the classification and number of objects defined in the second volume is the color array.
 \linespace
 
-The colour array helps the visualization separating all the objects with different colours. The colours must be defined in RGB color space and format.
-As well as for the opacities array, the colours array size $N$ must be equal to the number of objects defined in the visualization. The only little difference between the behaviour of the algorithm for opacities and colours is that if no colour is defined in input and no objects are stated as well, the algorithm will render the volume in a gray scale using directly voxels intensity values. 
+The color array helps the visualization separating all the objects with different colors. The colors must be defined in RGB color space and format.
+As well as for the opacities array, the colors array size $N$ must be equal to the number of objects defined in the visualization. The only little difference between the behavior of the algorithm for opacities and colors is that if no color is defined in input and no objects are stated as well, the algorithm renders the volume in grayscale using voxels intensity values directly. 
 \linespace
 
-The last argument is the rotational array in Yaw, Pitch and Roll format. In order to build an interactive system on top the algorithm of this work, a camera is needed to let users interact with volume and look at it from different point of view. Therefore, the rotation array allows moving such camera around the center of volume by means of the definition of a Yaw angle, a Pitch angle and a Roll angle that allow a camera to move freely around a pivot point.
+The last argument is the rotational array in yaw, pitch, and roll format. In order to build an interactive system on top of the algorithm of this work, a camera is needed to let users interact with volume and look at it from a different point of view. Therefore, the rotation array allows moving such camera around the center of volume by means of the definition of a yaw angle, a pitch angle and a roll angle that allow a camera to move freely around a pivot point.
 \linespace
 
 Very similar to the way Levoy formalized his work and as explained previously in direct volume rendering techniques section,
@@ -1390,12 +1392,11 @@ Figure \ref{fig:steps} shows how the algorithm has been decomposed in different 
 \end{figure}
 
 \subsection{Basic volume ray casting} 
-In this section, the procedure steps showed before will be explained step-by-step describing all the techniques employed in each step in order to reach the goal behind this work.
-Starting right after reading the input volume and the other input arguments the first step is to set up the bounding box around the volume.
+In this section, the procedure steps showed before is explained step-by-step describing all the techniques employed in each step in order to reach the goal behind this work.
+Starting right after reading the input volume and the other input arguments, the first step is to set up the bounding box around the volume.
 
-\paragraph{Bounding box}
-
-A bounding box, also known as \textit{minimum bounding box} in geometry, is a box for a point set $S$ in $N$ dimensions with the smallest measure within which all the points lie, and it is usually used to speed up computations. In the 2-dimensional case it is called the \textit{minimum bounding rectangle} and the measure used to check the required condition is the area. In the 3-dimensional case instead the measure used of the bounding box is the volume \cite{wiki_min_bound:1}.
+\myparagraph{Bounding box}
+A bounding box, also known as \textit{minimum bounding box} in geometry, is a box for a point set $S$ in $N$ dimensions with the smallest measure within which all the points lie, and it is usually used to speed up computations. In the 2-dimensional case, it is called the \textit{minimum bounding rectangle} and the measure used to check the necessary condition is the area. In the 3-dimensional case, instead, the measure used of the bounding box is the volume \cite{wiki_min_bound:1}.
 \linespace
 
 There exists two different type of bounding box (Figure \ref{fig:boundingbox}): \textit{Axis-aligned minimum bounding box} and \textit{Arbitrarily oriented minimum bounding box}.
@@ -1415,7 +1416,7 @@ There exists two different type of bounding box (Figure \ref{fig:boundingbox}): 
 
 The AABB bounding box concept in 3-Dimension and in computer graphics, as well as in this work is known under the name of \textit{bounding volume}. It is used to improve the efficiency of geometrical operations by using simple volume to contain more complex objects, as simpler volumes have simpler ways to test for overlap \cite{wiki_bound_volume:1}.
 
-In ray casting, and so in this implementation as well, bounding volumes are used in ray-intersection test. If the ray does not intersect the bounding volume, it cannot intersect the object contained within, allowing trivial rejection. Listing \ref{code:gridclass} shows the Grid class that represent the axis-aligned minimum bounding box and the member function \textit{isInsideGrid} that checks the condition if a given triple of indices falls inside the volume boundaries.
+In ray casting, and so in this implementation as well, bounding volumes are used in the ray-intersection test. If the ray does not intersect the bounding volume, it cannot intersect the object contained within, allowing trivial rejection. Listing \ref{code:gridclass} shows the Grid class that represents the axis-aligned minimum bounding box and the member function \textit{isInsideGrid} that checks the condition if a given triple of indices fall inside the volume boundaries.
 
 \begin{cpp}[caption={Grid class definition.},label=code:gridclass]
 class Grid {
@@ -1442,10 +1443,10 @@ public:
 };
 \end{cpp}
 
-This is one of the first speed-up in the implementation as part of the sequent ray casting and voxels intersections step of the algorithm. The reason is that with \textit{AABB} bounding volume all the multitude of cast rays can trivially checked if they end up inside or outside of volumetric dataset boundaries.
+This is one of the first speed-up in the implementation as part of the sequent ray casting and voxels intersections step of the algorithm. The reason is that with \textit{AABB} bounding volume all the multitude of cast rays can trivially be checked if they end up inside or outside of volumetric dataset boundaries.
 \linespace
 
-Listing \ref{code:gridinit} shows how the bounding box is initialized with respect to the size of the volumetric dataset by means of the \textit{Grid} class, where the first parameter \textit{Vector3(0)} is the origin of the world space and \textit{sizeArray} is the array that stores the volume dimensions and th
+Listing \ref{code:gridinit} shows how the bounding box is initialized with respect to the size of the volumetric dataset by means of the \textit{Grid} class, where the first parameter \textit{Vector3(0)} is the origin of the world space and \textit{sizeArray} is the array that stores the volume dimensions.
 
 \begin{cpp}[caption={Grid object initialization.},label=code:gridinit]
 Grid grid(Vector3(0), 
@@ -1453,9 +1454,9 @@ Grid grid(Vector3(0),
 	);
 \end{cpp}
 
-\paragraph{Camera setup} The next step is set the camera parameters. The meaning of the camera is to allow users to interact with the volume performing rotation around the center of the dataset.
+\myparagraph{Camera setup} The next step is setting up the camera parameters. The meaning of the camera is to allow users to interact with the volume performing rotation around the center of the dataset.
 
-First the class representing the camera must be defined. Listing \ref{code:cameraone} shows the attributes that compose the class, its constructor and methods headers, which will explained later on.
+First, the class representing the camera must be defined. Listing \ref{code:cameraone} shows the attributes that compose the class, its constructor, and methods headers, which is explained later on.
 
 \begin{cpp}[caption={Camera class definition with },label=code:cameraone]
 class Camera {
@@ -1477,11 +1478,11 @@ public:
 };
 \end{cpp}
 
-As can be seen, the Camera class constructor require in its signature two 3-dimensional vectors. These two vectors are needed in order to build the \textit{lookAt} matrix that let users position and steer the camera. The \textit{from} vector defines the position of the camera in the 3-dimensional world space, while the second one, the \textit{to} vector, defines the camera orientation with respect to a target point which the camera will be pointing at.
-The last statement in the constructor initialize the transformation matrix that will hold all the subsequent rotation matrices which will be created by the yaw, pitch and roll functions.
+As can be seen, the Camera class constructor requires in its signature two vectors. These two 3-dimensional vectors are needed in order to build the \textit{lookAt} matrix that let users position and steers the camera. The \textit{from} vector defines the position of the camera in the 3-dimensional world space, while the second one, the \textit{to} vector, defines the camera orientation with respect to a target point which the camera will be pointing at.
+The last statement in the constructor initializes the transformation matrix that will hold all the subsequent rotation matrices, which are created by the yaw, pitch, and roll functions.
 \linespace
 
-Therefore, the camera will be defined and initialized as shown in Listing \ref{code:camerainit}, where \textit{sizeArray} is still the array that stores the volume dimensions and \textit{options.viewOffest} is a constant double precision variable that defines a viewing offset that let the camera be positioned not too far from the volume but enough to be able to show the entire volume.
+Therefore, the camera will be defined and initialized as shown in Listing \ref{code:camerainit}, where \textit{sizeArray} is still the array that stores the volume dimensions and \textit{options.viewOffest} is a constant double-precision variable that defines a viewing offset that lets the camera be positioned not too far from the volume but enough to be able to show the entire volume.
 
 \begin{cpp}[caption={Camera definition and initialization.},label=code:camerainit]
 Camera camera(
@@ -1491,9 +1492,9 @@ Camera camera(
 	);
 \end{cpp} 
 
-Yaw, pitch and roll functions create the transformation matrices, as defined in the section about affine transformations, that rotate the camera. As already said, those transformation are needed to let the camera move around a pivot point, which is the center of the volume as defined in the construction call.
+Yaw, pitch, and roll functions create the transformation matrices, as defined in the section about affine transformations, that rotate the camera. As already said, those transformations are needed to let the camera move around a pivot point, which is the center of the volume as defined in the construction call.
 
-Listing \ref{code:camerarotate} shows the yaw, pitch and roll rotations, that are respectively Z-Axis, Y-Axis and X-Axis in the world space.
+Listing \ref{code:camerarotate} shows the yaw, pitch, and roll rotations, that are respectively Z-Axis, Y-Axis, and X-Axis in the world space.
 
 \begin{cpp}[caption={},label=code:camerarotate]
 void yaw(const double& angle) { // z-axis
@@ -1525,11 +1526,11 @@ void roll(const double& angle) { // x-axis
 }
 \end{cpp}
 
-Each function has an input argument that is the rotating angle expressed in degrees of the respective rotational axis. This angle in then converted from degrees to radiant due to the formal requirement of the mathematical functions \textit{sin} and \textit{cos} of the C++ standard library which require that angles are express in radiant instead of degrees.
+Each function has an input argument that is the rotating angle expressed in degrees of the respective rotational axis. Then,  the angle is converted from degrees to radians due to the formal requirement of the mathematical functions \textit{sin} and \textit{cos} of the C++ standard library.  They require angles expressed in radians instead of degrees.
 Then, the rotational matrix is defined and multiplied with a matrix multiplication by means of the member function \textit{matrixMulti} to the final rotation matrix of the camera.
 \linespace
 
-Finally, all these transformations applied to the \textit{rotationM} matrix contribute to generate the \textit{lookAt} matrix which defines the final position and orientation of the camera. Listing \ref{code:cameralookat} shows how the lookAt matrix is built from the two input parameters of the camera class constructor and the final \textit{rotationM} rotational matrix , following the procedure already discussed in section of affine transformations.
+Finally, all these transformations applied to the \textit{rotationM} matrix contribute to generating the \textit{lookAt} matrix, which defines the final position and orientation of the camera. Listing \ref{code:cameralookat} shows how the \textit{lookAt} matrix is built from the two input parameters of the camera class constructor and the final \textit{rotationM} rotational matrix, following the procedure already discussed in the section of affine transformations.
 
 \begin{cpp}[caption={Camera class member function that build the lookAt transformation matrix, applying the final \textit{rotationM} matrix which group all the rotational transformation matrices. },label=code:cameralookat]
 void setupLookAtMatrix() {
@@ -1548,10 +1549,11 @@ void setupLookAtMatrix() {
 }
 \end{cpp}
 
-\paragraph{Ray casting} Ray casting is the next phase of the algorithm. As described by Levoy in his work \cite{levoy_1990:5} it is a central part of the procedure, because the entire idea behind the volume ray casting  technique is casting rays.
+\myparagraph{Ray casting} Ray casting is the next phase of the algorithm. As described by Levoy in his work \cite{levoy_1990:5} it is a central part of the procedure, because the entire idea behind the volume ray casting technique is casting rays.
 
-First of all, the number of rays to be cast must be decided and this number depends on the final output image resolution express in terms of $width \times height$, where \textit{width} and \textit{height} represent the number of pixels.
-As already explained, for each pixel a ray will be cast toward the volume., Listing \ref{code:rayloop} shows and excerpt of the main loop in which are defined and initialized new rays, one for each pixel of the final image.
+First of all, the number of rays to be cast must be decided, and this number depends on the final output image resolution express in terms of $width \times height$, where \textit{width} and \textit{height} represent the number of pixels.
+As already explained, for each pixel a ray is cast toward the volume., Listing \ref{code:rayloop} shows an excerpt of the main loop in which are defined and initialized new rays, one for each pixel of the final image.
+
 
 \begin{cpp}[caption={Main loop in which a ray is created for each output image pixel, and which origin point is transformed from screen space $(w,h)$ to world space coordinates $(x_{1},y_{1},z_{1})$.},label=code:rayloop]
 for (size_t h = 0; h < options.imageHeight; ++h) {
@@ -1573,11 +1575,10 @@ for (size_t h = 0; h < options.imageHeight; ++h) {
 			
 \end{cpp}
 
-As can be seen, there are two grafted loops that goes over the image height and width whom values are store in \textit{imageHeight} and \textit{imageWidth} respectively. Inside, can be seen that the 2-dimensional point from which a ray is originated $(w,h)$ in the image space is transformed in a 3-dimensional point in world space with respect to the camera position and orientation by means of a multiplication between the Vector3 center of the ray $(x,y,0)$, stored inside \textit{rayStart}, and the \textit{lookAt } matrix of the camera. The same operations is performed to calculate a dummy ray's end point which is only used to calculated the correct direction of the ray, as this end point \textit{rayEnd}, $(x,y,1)$, is also expressed in world space with respect to the camera.
+As can be seen, there are two grafted loops that go over the image height and width whom values are store in \textit{imageHeight} and \textit{imageWidth} respectively. Inside, can be seen that the 2-dimensional point from which a ray is originated $(w,h)$ in the image space is transformed in a 3-dimensional point in world space with respect to the camera position and orientation by means of a multiplication between the Vector3 center of the ray $(x,y,0)$, stored inside \textit{rayStart}, and the \textit{lookAt } matrix of the camera. The same operations are performed to calculate a dummy ray's endpoint which is only used to calculated the correct direction of the ray, as this endpoint \textit{rayEnd}, $(x,y,1)$, is also expressed in world space with respect to the camera.
 \linespace
 
-The last important aspect of this excerpt is the difference with the original work \cite{levoy_1990:5}. Instead of only two grafted loops, that go over the image dimensions, there is also an additional loop that goes over the number of visible objects whom are defined by the second Mex function volume argument. By means of this additional loop an additional ray in cast for every visible distinct visible object, that has the same origin and direction of every other rays originated from the same image pixel. Listing \ref{code:visibleObjSize} shows how this single precision dimension is computed with respect to the number of objects whom visibility expressed as opacity in the Mex input argument \textit{alphaArray} is greater then zero, which means that every other objects, even if defined inside the volumetric dataset that holds the objects data, with opacity zero will be discarded and computation time and power will be saved as those objects are not visible at all.
-
+The last important aspect of this excerpt is the difference with the original work \cite{levoy_1990:5}. Instead of only two grafted loops, that go over the image dimensions, there is also an additional loop that goes over the number of visible objects that are defined by the second Mex function volume argument. By means of this additional loop, a new ray is cast for every visible distinct visible object, that has the same origin and direction of every other ray originated from the same image pixel. Listing \ref{code:visibleObjSize} shows how this single precision dimension is computed with respect to the number of objects whom visibility expressed as opacity in the Mex input argument \textit{alphaArray} is greater then zero, which means that every other object, even if defined inside the volumetric dataset that holds the objects, with opacity zero will be discarded and computation time and power will be saved as those objects are not visible at all.
 \begin{cpp}[caption={Computation of the number of visible objects concerning the defined elements of the alphaArray with opacity greater than zero},label=code:visibleObjSize]
 if (numberOfObjects > 0) {
 	for (int j = 0; j < alphaSize; ++j) {
@@ -1590,24 +1591,24 @@ if (numberOfObjects > 0) {
 }
 \end{cpp}
 
-\paragraph{Bounding box intersection} The next step of this algorithm is another fundamental part of the work \cite{levoy_1988:4}, the bounding box intersection.
+\myparagraph{Bounding box intersection} The next step of this algorithm is another fundamental part of the work \cite{levoy_1988:4}, the bounding box intersection.
 
-First of all, it is important to formalize the ray definition. A ray is indeed a straight line defined by the following analytical equation, where big $O$ corresponds to the origin of the ray, big $D$ corresponds to its direction and $t$ can be any real (negative, positive or zero) real value which define a single point along the ray itself.
+First of all, it is essential to formalize the ray definition. A ray is indeed a straight line defined by the following analytical equation, where big $O$ corresponds to the origin of the ray, big $D$ corresponds to its direction, and $t$ can be any real (negative, positive or zero) real value which defines a single point along the ray.
 
 \[
-y = O +Dt
+y = O +Dt \;.
 \]
 
-Another components of this algorithm that can be expressed by a similar formula are the box bounds of the axis-aligned bounding box,  as they are defined as a set of parallel lines to each axis of the coordinate system, where $bounds0_{x}$ correspond to \textit{bounds[0].x} and so on for every axis as follows:
+Another component of this algorithm that can be expressed by a similar formula is the box bound of the axis-aligned bounding box,  as they are defined as a set of parallel lines to each axis of the coordinate system, where $bounds0_{x}$ correspond to \textit{bounds[0].x} and so on for every axis as follows.
 
 \[
-y = bounds0_{x}
+y = bounds0_{x} \;.
 \] 
 
-Therefore, it is trivial that in order to find the intersection point of the ray with one the box bounds lines, the ray analytical equation must be reordered and expressed as follows:
+Therefore, it is trivial that in order to find the intersection point of the ray with one the box bounds lines, the ray analytical equation must be reordered and expressed as follows.
 
 \[
-tmin_{x}\,=\,(bounds0_{x} - O_{x})\,/\,D_{x}
+tmin_{x}\,=\,(bounds0_{x} - O_{x})\,/\,D_{x} \;.
 \] 
 
 Where $tmin_{x}$ is the point where the ray and the bounding volume defined lines intersect, $bounds0_{x}$ is the x component of the bounding volume's minimum extent, $O_{x}$ and $D_{x}$ are the x component of the origin and the direction of the ray, respectively. The same formula can be used to compute the intersection point $tmax_{x}$ and the x component of the bounding volume's maximum extent, as well as for the other axis. Figure \ref{fig:intersectingpoints} show an example in 2-Dimension.
@@ -1619,15 +1620,14 @@ Where $tmin_{x}$ is the point where the ray and the bounding volume defined line
 \label{fig:intersectingpoints}
 \end{figure}
 
-
-Next step is to find out which\textit{t-values} lies on the volume between all axis, and find if the ray intersects with volume Mathematically it can be find by comparing their values choosing the point which value for t is the greatest for the volume's minimum extent and choosing the point which value for t is the smallest for the maximum extent, as follows:
+Next step is to find out which\textit{t-values} lies on the volume between all axis, and find if the ray intersects with volume Mathematically it can be found by comparing their values choosing the point which value for t is the greatest for the volume's minimum extent and choosing the point which value for t is the smallest for the maximum extent, as follows.
 
 \[
-tmin\, =\, (tmin_{x} > tmin_{y})\, ?\, tmin_{x} \,:\, tmin_{y} 
+tmin\, =\, (tmin_{x} > tmin_{y})\, ?\, tmin_{x} \,:\, tmin_{y} \;.
 \]
 
 \[
-tmax\, =\, (tmax_{x} < tmax_{y}) ? tmax_{x} \,:\, tmax_{y} 
+tmax\, =\, (tmax_{x} < tmax_{y}) ? tmax_{x} \,:\, tmax_{y} \;.
 \]
 
 
@@ -1643,7 +1643,7 @@ However, as can be seen, additional statements are present in the excerpt to han
 \end{figure}
 
 
-Last, to compute the correct interval of \textit{tmin} and \textit{tmax} the ray direction inverse is tested to be greater or equal to zero. This proposed function follows the work of Amy Williams et al \cite{Williams:2005}, that is one of the state-of-the-art ray-box intersection routine that uses IEEE numerical properties for robustness, which is usually one of the computational bottle necks of ray casting using axis-aligned bounding box, that has been chosen to contribute to the fastness and effectiveness of this ray casting algorithm.
+Last, to compute the correct interval of \textit{tmin} and \textit{tmax}, the ray direction inverse is tested to be greater or equal to zero. This proposed function follows the work of Amy Williams et al. \cite{Williams:2005} that is one of the state-of-the-art ray-box intersection routines that uses IEEE numerical properties for robustness, which is usually one of the computational bottlenecks of ray casting using axis-aligned bounding box, that has been chosen to contribute to the fastness and effectiveness of this ray casting algorithm.
 
 \begin{cpp}[caption={Ray-box intersection checking function that also return the points in space along the ray of intersection.},label=code:intersection]
 bool computeRayAABBoxIntersection(const Ray& ray, 
@@ -1693,13 +1693,13 @@ bool computeRayAABBoxIntersection(const Ray& ray,
 
 
 \cite{Williams:2005} it is indeed an improved version of Smits' \cite{Smits:1998}
-which uses directly ray direction instead of the inversion of the ray direction as reported in Williams et al. works \cite{Williams:2005}. This subtle change actually exploit the properties of the floating point IEEE standard \cite{IEEE:30711} to avoid some explicit tests. 
+which uses directly ray direction instead of the inversion of the ray direction as reported in Williams et al. works \cite{Williams:2005}. This subtle change actually exploit the properties of the floating-point IEEE standard \cite{IEEE:30711} to avoid some explicit tests. 
 \linespace
 
-The problem of the original version from Smits was that those if statements checking the ray directions x,y, and z whom values would be $-0.0$ the resulting interval would be incorrect. The reason is that for the IEEE floating point standard $-0 == 0$ is \emph{true}. Therefore, instead of the resulting interval being $(-\infty, +\infty)$, it will be the degenerate $(+\infty,-\infty)$. When such interval is obtained the functions will fail on detecting a valid intersection.
+The problem of the original version from Smits was that those if statements checking the ray directions x,y, and z whom values would be $-0.0$ the resulting interval would be incorrect. The reason is that for the IEEE floating-point standard $-0 == 0$ is \emph{true}. Therefore, instead of the resulting interval being $(-\infty, +\infty)$, it will be the degenerate $(+\infty,-\infty)$. When such an interval is obtained, the functions fails on detecting a valid intersection.
 \linespace
 
-Then, the solution proposed by Williams et al. \cite{Williams:2005} is to substitute the ray direction in the if statements with the its inverse, paying attention to storing those inverse values before by pre-computing them, otherwise it would degrade the efficiency of the algorithm since the direction inverse must always be recomputed. 
+Then, the solution proposed by Williams et al. \cite{Williams:2005} is to substitute the ray direction in the if statements with its inverse, paying attention to storing those inverse values before by pre-computing them, otherwise it would degrade the efficiency of the algorithm since the direction inverse must always be recomputed. 
 \linespace 
 
 Listing \ref{code:mainloopintersection} reiterate the main loop, although with the addition of the ray-box intersection function call which require as input argument the ray itself, the two values \textit{tmin} and \textit{tmax} and the bounding volume. As output, it returns a boolean which value corresponds to a successful ray-box intersection if \emph{true} or to a miss, if equal to \emph{false}, that means the cast ray is outside of the volume.
@@ -1732,7 +1732,7 @@ for (size_t h = 0; h < options.imageHeight; ++h) {
 	}
 }
 \end{cpp}
-\paragraph{Voxels' intensity classification} Classification of the voxels intensity value is the next essential rung in volume ray casting techniques. As illustrated by Levoy in his work \cite{levoy_1988:4}, a quick classification method is to sample voxel intensities over the intersecting portion of the ray at regular step.
+\myparagraph{Voxels' intensity classification} Classification of the voxels intensity value is the next essential rung in volume ray casting techniques. As illustrated by Levoy in his work \cite{levoy_1988:4}, a quick classification method is to sample voxel intensities over the intersecting portion of the ray at regular step.
 
 
 Figure \ref{fig:segmentclassify} shows the aforementioned procedure with respect to actual implementation, where the intersecting part of the ray is defined by the \textit{start} and \textit{end} 3-dimensional points.
@@ -1778,9 +1778,9 @@ for (size_t t = 0; t < maxStep; t += littleStep) {
 }
 \end{cpp}
 
-\paragraph{Compute shadows}
+\myparagraph{Compute shadows}
 \cite{levoy_1988:4} described how exactly intensities must be classified beside the step at which are classified.
-One of the problem with ray casting is the image quality strictly related to the number of cast rays used to sample voxels value. In current implementation one ray is cast per pixel and such point sampling usually produce strongly image aliasing \cite{levoy_1988:4}.
+One of the problems with ray casting is the image quality strictly related to the number of cast rays used to sample voxels value. In the current implementation, one ray is cast per pixel, and such point sampling usually produces strongly image aliasing \cite{levoy_1988:4}.
 
 Within this limitation, Levoy proposed two solutions: blurring and super-sampling. Slightly blurring the acquired volumetric dataset during data preparation, the sharp silhouettes exhibited by the volume render is softened. However, this approach may reduce aliasing at the expense of resolution, and it may introduce artifacts in the output image.
 
@@ -1791,7 +1791,7 @@ An alternative means is super-sampling. The idea is to interpolate additional sa
 Therefore, a component-wise linear interpolation\footnote{In mathematics, linear interpolation is a method of curve fitting using linear polynomials to construct new data points within the range of a discrete set of known data points \cite{993400}}. method as been chosen to deal with the aforementioned problem of aliasing, following the suggestions of Levoy, as part of the computing shadows phase.
 \linespace
 
-Listing \ref{code:getgradient} shows the function which implement this interpolation procedure with respect to the sampled voxel value taking into account its neighbourhood on each dimension x,y, and z. The procedure returns a 3-dimensional vector composed by the linear interpolation of the voxel intensity for each dimension. This 3-dimensional vector corresponds to the gradient\footnote{In vector calculus, the gradient is a multi-variable generalization of the derivative.[1] Whereas the ordinary derivative of a function of a single variable is a scalar-valued function, the gradient of a function of several variables is a vector-valued function \cite{gradient:7}.} of the voxel. 
+Listing \ref{code:getgradient} shows the function which implements this interpolation procedure with respect to the sampled voxel value taking into account its neighborhood on each dimension x,y, and z. The procedure returns a 3-dimensional vector composed by the linear interpolation of the voxel intensity for each dimension. This 3-dimensional vector corresponds to the gradient\footnote{In vector calculus, the gradient is a multi-variable generalization of the derivative.[1] Whereas the ordinary derivative of a function of a single variable is a scalar-valued function, the gradient of a function of several variables is a vector-valued function \cite{gradient:7}.} of the voxel. 
 
 \begin{cpp}[caption={Component-wise linear interpolation functions computing voxel gradient},label=code:getgradient]
 Vector3 getGradient(const int& ix, const int& iy, const int& iz, 
@@ -1829,12 +1829,12 @@ Vector3 getGradient(const int& ix, const int& iy, const int& iz,
 }
 \end{cpp}
 
-A gradient of a function, at a point in Cartesian coordinates, is a vector which direction points to the biggest change of the function at that point. Therefore, it can be used to represent interpolate voxels intensities.
+A gradient of a function, at a point in Cartesian coordinates, is a vector which direction points to the biggest change of the function at that point. Therefore, it can be used to represent interpolated voxels intensities.
 \linespace
 
-A correct shadowing phase is fundamental for the correct display of the volume. To ensure good quality approximation Blinn-Phong illumination model has been employed. As already described, the Blinn-Phong reflection model equation works as follows:
+A correct shadowing phase is fundamental for the correct display of the volume. To ensure good quality approximation, Blinn-Phong illumination model has been employed. As already described, the Blinn-Phong reflection model equation works as follows.
 \[
-I = k_{a} i_{a} + \sum_{m \in Lights} (k_{d}(L_{m} \cdot N)i_{m,d} +k_{s}(N \cdot H)^{\alpha}i_{m,s})
+I = k_{a} i_{a} + \sum_{m \in Lights} (k_{d}(L_{m} \cdot N)i_{m,d} +k_{s}(N \cdot H)^{\alpha}i_{m,s}) \;.
 \]
 
 The only difference is that no surfaces are involved. Therefore the gradient is used to compute the sampled voxel's normal vector much as the computed normal of a surface at a specified point.
@@ -1878,7 +1878,7 @@ yuvIllumination.z = yuvDiffuse.z;
 IlluminationI = yuvToRgb.ColMajMatrixMulti(yuvIllumination);
 \end{cpp}
 
-\paragraph{Compositing} The last step of the ray cast algorithm is composing sampled values after shadows computation back to image pixels, to project the volume into a 2-dimensional output image finally.
+\myparagraph{Compositing} The last step of the ray cast algorithm is composing sampled values after shadows computation back to image pixels, to project the volume into a 2-dimensional output image finally.
 
 In the end, every cast ray has a stored color which refers to a specific image pixel. However, for each pixel, more than one ray is cast due to the introduction of objects.
 \linespace
@@ -2048,7 +2048,7 @@ The system on which the prototype has been tested and on which rendering results
 \subsection{Rendering results} 
 %ct_head 185 x 211 x 207 , 7objs
 % 250x 250
-The first volume used to test the procedure is a CT study of  a human head of size $186\,x\,211\,x\,207$. Figure \ref{fig:cubic_ct_head} shows the prototype interface with rotation controls (Up, Down, Left and Right direction) to interact with the volume and the projection of the sampled values with a threshold of $91$, which can be set using the bottom sliding bar. The output image size is set to $ 250\,x\,250$. Note that the image appears to be stretched on the vertical axis. The reason is because of the fixed MATLAB rendering viewport, which displays the output image.
+The first volume used to test the procedure is a CT study of a human head of size $186\,x\,211\,x\,207$. Figure \ref{fig:cubic_ct_head} shows the prototype interface with rotation controls (Up, Down, Left and Right direction) to interact with the volume and the projection of the sampled values with a threshold of $91$, which can be set using the bottom sliding bar. The output image size is set to $ 250\,x\,250$. Note that the image appears to be stretched on the vertical axis. The reason is because of the fixed MATLAB rendering viewport, which displays the output image.
 
 \begin{figure}[hbtp]
 \centering
@@ -2081,7 +2081,7 @@ Another dataset used correspond to a head skull and brain, which size is $230\,x
 Figure \ref{fig:biopsy} shows the rendered volume much the same as for the CT head. The top row shows different rotation matrices applied to the volume. The second row, display the objects present in the volume, which sum up to a total of ten, rendered with different opacities and colors as well, to isolate regions of interest.
 \linespace
 
-The last volumetric dataset used is an MRI study of another human head which size is $176\,x\,236\,x\,187$, and it has six different defined objects which belong to the brain. The top row shows the volume from different angles, the second one shows the different objects with different opacities where a full opaque outer brain layer (with defined alpha value one) obfuscate the inner parts.
+The last volumetric dataset used is an MRI study of another human head which size is $176\,x\,236\,x\,187$, and it has six different defined objects which belong to the brain. The top row shows the volume from different angles. The second one shows the different objects with different opacities where a full opaque outer brain layer (with defined alpha value one) obfuscate the inner parts.
 \linespace 
 
 These two last volumes have one characteristic in common, isovalue filtering by threshold is ineffective. Therefore, as illustrated in previous pictures, the capability of showing semi-transparent surface along with the ability of separate groups insides volume by means of objects is crucial to obtain a meaningful visualization.
