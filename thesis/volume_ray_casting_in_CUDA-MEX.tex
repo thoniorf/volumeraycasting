@@ -93,6 +93,27 @@ University of Applied Sciences, Hagenberg
 \theauthor
 \pagebreak
 \section*{Abstract}
+Medical image analysis plays a crucial role in scientific visualization and is an essential tool that gives insight to specialists and helps them in critical processes such as treatment planning, surgery rehearsal, and general diagnosis.
+
+The anatomical situation of the patient is generated from magnetic resonances, computed tomographies, and other medical devices as an extensive set of images. Efficient and reliable volume rendering algorithms must handle these volumetric datasets in order to visualize an accurate 3-dimensional reconstruction of the image slices.
+
+There exist different state-of-the-art systems and algorithm capable of delivering valid results,  based on direct and indirect volume rendering techniques. However, most of them are very expensive and proprietary, both hardware and software.
+
+Therefore, the aim of this work is to provide a flexible direct volume rendering tool capable of reaching the same extent of the competition in terms of reliability and efficiency.
+Firstly, it exploits modern graphic hardware's massively parallel architecture by means of CUDA to provide the high rendering performance required.  
+
+Secondly, the implementation in C++ and the integration as compiled MATLAB Mex function allows the development of rapid prototyping tools for 3D medical imaging tools, and easy adaptation to different application scenarios and simple integration of new functionality, even in MATLAB.
+
+In order to deliver an efficient and accurate tool, the first phase focused on study and investigation of volume rendering techniques applied to medical and computer-assisted surgery environment focusing on GPU-based and general parallel implementations of accurate techniques.
+
+The second phase concerned the development of an accelerated volume ray casting rendering tool in MATLAB to reach the desired levels of accuracy and performance employing CUDA API for massive parallelization. 
+
+The result of this work is an efficient and accurate object-oriented volume rendering tool capable of real-time user interaction at the speed of around 30 frame-per-second, delivered with the feature of separating volume objects.
+It can compete with state-of-the-art closed systems, and by exploiting the massive computational power of graphic devices using CUDA can scale to higher performances without much effort.
+
+To conclude, the presented implementation can be further improved and optimized, thanks to integration with the MATLAB environment and C++ implementation, introducing some optimized data structure for faster volume traversing or some early ray termination conditions, and even improving the current prototype with more graphical controls and interaction features. 
+
+   
 \pagebreak
 \tableofcontents
 \pagebreak
@@ -107,7 +128,7 @@ Such devices generate large volumetric images subdivided into slices of roughly 
 
 Therefore, volumetric image rendering techniques need to be very efficient and reliable as they should show the real anatomical situation of a patient.
 
-The main characteristic of these techniques, in environments such as preoperative planning and even more in computer-assisted surgery, is to be accurate 3-Dimensional reconstructions of the 2-dimensional slices generated from the devices mentioned above in order to improve the interpretability of the content, while allowing real-time user interaction and navigation of the data sets.
+The main characteristic of these techniques, in environments such as preoperative planning and even more in computer-assisted surgery, is to be accurate 3-dimensional reconstructions of the 2-dimensional slices generated from the devices mentioned above in order to improve the interpretability of the content, while allowing real-time user interaction and navigation of the data sets.
 \linespace
 
 There exist different and very valid techniques for the rendering of volume data, that are mainly divided into direct and indirect method. The most significant difference between the two is manifested in the pre-processing step.
@@ -140,21 +161,23 @@ Finally, in order to build an open, extensible prototype, the rich environment o
 \linespace
 
 This thesis is divided into the following sections:
-\paragraph{Section 1}, focus on describing and explaining some basic knowledge. Starting from computer graphics concepts such as rendering pipeline, affine transformations, Phong and Blinn-Phong illuminations models and color space concepts.
 
-It also covers different volume rendering techniques, both indirect and direct procedures, such as Marching cubes, texture-based, shear-warping, splatting, and ray casting. Then, it goes over current state-of-the-art volume rendering systems. 
- 
- \paragraph{Section 2}, describe in-depth the implementation of the procedure of this work. It introduces the technologies used and how they work and the algorithm's architecture.
+\textbf{Section 1}, focuses on describing and explaining some basic knowledge. Starting from computer graphics concepts such as rendering pipeline, affine transformations, Phong and Blinn-Phong illuminations models and color space concepts.
+
+It also covers different volume rendering techniques, both indirect and direct procedures, such as Marching cubes, texture-based, shear-warping, splatting, and ray casting. Then, it goes over current state-of-the-art volume rendering systems.
+
+\textbf{Section 2}, describe in-depth the implementation of the procedure of this work. It introduces the technologies used and how they work and the algorithm's architecture.
  
 It describes the first non-parallel version of the implementation which is used as the starting point for the parallel version, and as performance lower bound.
 
 Finally, the accelerated version which exploits GPUs' power is described.
 
-\paragraph{Section 3}, is the last section. It includes the conclusions of this work, the performances of the final parallel algorithm compared with the first basic version. It also draws some final considerations and some prompts for future research to improve the present one.
+\textbf{Section 3}, is the last section. It includes the conclusions of this work, the performances of the final parallel algorithm compared with the first basic version. It also draws some final considerations and some prompts for future research to improve the present one.
 \pagebreak
 \fancyhead[L]{\nouppercase{\leftmark}}
-\pagenumbering{arabic}
+
 \section{Basics of computer aided visualization}
+\pagenumbering{arabic}
 \subsection{Computer graphics concepts} 
 Computer graphics is a wide field of computer science with the focus on computer-based imaging.
 
@@ -183,7 +206,7 @@ An example of a GPU rendering pipeline is sketched in Figure \ref{fig:renderingp
 
 \centering
 \includegraphics[scale=0.85]{images/gpu-rendering-pipeline.png}
-\caption{Abstract GPU rendering pipeline}
+\caption{Abstract GPU rendering pipeline \cite{weiskopf_2006:1}}
 \label{fig:renderingpipeline}
 \end{figure}
 
@@ -340,7 +363,7 @@ The reason why it is explained along with affine transformations is that the two
 \begin{figure}[hbtp]
 \centering
 \includegraphics[scale=0.2]{images/ViewFrustum.png}
-\caption{A view frustum. Frustum's boundaries can be recognized by the different colors. Top in red, Right in green and the Near plane in yellow. }
+\caption{A view frustum. Frustum's boundaries can be recognized by the different colors. Top in red, Right in green and the Near plane in yellow \cite{wiki_frustum:1}.}
 \label{fig:viewfrustum}
 \end{figure}
 
@@ -422,7 +445,7 @@ However, there exist different types of coordinate system inside a single comput
 \begin{figure}[hbtp]
 \centering
 \includegraphics[scale=0.5]{images/coordinate_systems.png}
-\caption{Coordinate systems and realtives transformation matrices}
+\caption{Coordinate systems and realtives transformation matrices \cite{learnopengl}.}
 \label{fig:coordinate_systems}
 \end{figure}
 
@@ -553,7 +576,7 @@ applying these weights to the RGB components.
 \begin{figure}[hbtp]
 \centering
 \includegraphics[scale=0.5]{images/gamut_yuv.png}
-\caption{HDTV Rec. 709 (quite close to SDTV Rec. 601) compared with UHDTV Rec. 2020} 
+\caption{HDTV Rec. 709 (quite close to SDTV Rec. 601) compared with UHDTV Rec. 2020 \cite{wiki_yuv}} 
 \end{figure}
 
 
@@ -631,7 +654,7 @@ It represent a single value on a regular grid in 3-dimensional space (volume), a
 \begin{figure}[hbtp]
 \centering
 \includegraphics[scale=0.5]{images/Voxel.png}
-\caption{Illustration of a voxel grid, each containing a color value.}
+\caption{Illustration of a voxel grid, each containing a color value \cite{wiki_voxel}.}
 \label{fig:voxel}
 \end{figure}
 
@@ -913,7 +936,7 @@ Indeed, the core concept is very similar to the one used in the ray tracing tech
 \begin{figure}[hbtp]
 \centering
 \includegraphics[scale=0.55]{images/levoyraycasting.png}
-\caption{Levoy's volume ray casting algorithm architecture.}
+\caption{Levoy's volume ray casting algorithm architecture \cite{levoy_1988:4}.}
 \label{fig:levoyraycasting}
 \end{figure}
 
@@ -933,7 +956,7 @@ The basic idea that characterizes ray casting is that it starts from the view pl
 \begin{figure}[hbtp]
 \centering
 \includegraphics[scale=.68]{images/raycasting-steps.png}
-\caption{Volume ray casting decomposed steps.}
+\caption{Volume ray casting decomposed steps \cite{wiki_ray}.}
 \label{fig:raycastingsteps}
 \end{figure}
 
@@ -1038,7 +1061,7 @@ The core idea is to cast rays directly through centers of pixels, as standard ra
 \begin{figure}[hbtp]
 \centering
 \includegraphics[scale=0.3]{images/shear-image-order.png}
-\caption{Shear-image order ray-casting. Grey samples are interpolated between original volume slices.}
+\caption{Shear-image order ray-casting. Grey samples are interpolated between original volume slices \cite{PFISTER2005229}.}
 \label{fig:shearimageorder}
 \end{figure}
 
@@ -1320,7 +1343,7 @@ Figure \ref{fig:cudacompiler}, shown the NVCC that processes a CUDA program at t
 
 \begin{figure}[hbtp]
 \centering
-\includegraphics[scale=0.7]{images/cuda-compiler.png}
+\includegraphics[scale=0.6]{images/cuda-compiler.png}
 \caption{Overview of the compilation process of a CUDA program}
 \label{fig:cudacompiler}
 \end{figure}
@@ -1616,7 +1639,7 @@ Where $tmin_{x}$ is the point where the ray and the bounding volume defined line
 \begin{figure}[hbtp]
 \centering
 \includegraphics[scale=1]{images/intersectingpoints.png}
-\caption{2-Dimension example of ray-box intersection.}
+\caption{2-Dimension example of ray-box intersection \cite{Scratchapixel2014Aug}.}
 \label{fig:intersectingpoints}
 \end{figure}
 
@@ -1638,7 +1661,7 @@ However, as can be seen, additional statements are present in the excerpt to han
 \begin{figure}[hbtp]
 \centering
 \includegraphics[scale=1]{images/intersectingmissing.png}
-\caption{Ray-box non-intersecting cases.}
+\caption{Ray-box non-intersecting cases \cite{Scratchapixel2014Aug}.}
 \label{fig:intersectionmissing}
 \end{figure}
 
@@ -1919,7 +1942,7 @@ for (size_t h = 0; h < options.imageHeight; ++h) {
 	}
 }
 \end{cpp}
-\pagebreak
+
 \subsection{Parallelize with CUDA} 
 The previous section describes the non-parallel version of the algorithm. Instead, in this section, the accelerated version is discussed going through all the changes from the basic version to change from a linear execution to a concurrent execution model. 
 
@@ -2032,7 +2055,7 @@ if (i < options.imageDimension) {
 return;
 }
 \end{cpp}
-\pagebreak
+
 \section{Conclusions} 
 In this work, a volume rendering algorithm has been presented and explained. Starting from the original work \cite{levoy_1988:4} about a volume ray casting pipeline, a first basic implementation has been developed and illustrated. 
 
@@ -2085,7 +2108,6 @@ The last volumetric dataset used is an MRI study of another human head which siz
 \linespace 
 
 These two last volumes have one characteristic in common, isovalue filtering by threshold is ineffective. Therefore, as illustrated in previous pictures, the capability of showing semi-transparent surface along with the ability of separate groups insides volume by means of objects is crucial to obtain a meaningful visualization.
-\pagebreak
 
 \begin{figure}[hbtp]
 \centering
